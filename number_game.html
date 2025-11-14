@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字消除游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #e2e8f0;
+        }
+
+        .game-container {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .game-title {
+            color: #60a5fa;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(96, 165, 250, 0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: rgba(51, 65, 85, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #60a5fa;
+        }
+
+        .target-section {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(51, 65, 85, 0.7);
+            border-radius: 10px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .target-label {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .target-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #60a5fa;
+            text-shadow: 0 2px 4px rgba(96, 165, 250, 0.3);
+        }
+
+        .numbers-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .number-card {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .number-card.selected {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            border-color: #60a5fa;
+        }
+
+        .number-card.eliminated {
+            opacity: 0.4;
+            background: #475569;
+            cursor: not-allowed;
+            border-color: #64748b;
+        }
+
+        .operations {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .operation-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid #2563eb;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .operation-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .operation-btn:disabled {
+            background: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            border-color: #64748b;
+            box-shadow: none;
+        }
+
+        .two-number-ops {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .new-game-btn {
+            background: #2c5282;
+            color: white;
+            border: 1px solid #2a4365;
+        }
+
+        .new-game-btn:hover {
+            background: #2a4365;
+        }
+
+        .back-btn {
+            background: #718096;
+            color: white;
+            border: 1px solid #4a5568;
+        }
+
+        .back-btn:hover {
+            background: #4a5568;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .numbers-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .operations {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">数字消除游戏</h1>
+        </div>
+        
+        <div class="game-info">
+            <div class="info-item">
+                <div class="info-label">时间</div>
+                <div class="info-value" id="timer">00:00</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">步数</div>
+                <div class="info-value" id="steps">0</div>
+            </div>
+        </div>
+        
+        <div class="target-section">
+            <div class="target-label">目标数字</div>
+            <div class="target-number" id="target-number">-</div>
+        </div>
+        
+        <div class="numbers-container" id="numbers-container">
+            <!-- 数字卡片将在这里动态生成 -->
+        </div>
+        
+        <div class="operations">
+            <button class="operation-btn" id="increment-btn" disabled>+1</button>
+            <button class="operation-btn" id="decrement-btn" disabled>-1</button>
+        </div>
+        
+        <div class="two-number-ops">
+            <button class="operation-btn" id="add-btn" disabled>相加</button>
+            <button class="operation-btn" id="subtract-btn" disabled>相减</button>
+        </div>
+        
+        <div class="game-controls">
+            <button class="control-btn new-game-btn" id="new-game-btn">新游戏</button>
+            <button class="control-btn back-btn" id="back-btn">返回主界面</button>
+        </div>
+        
+        <div class="message info" id="message"></div>
+    </div>
+
+    <script>
+        class NumberGame {
+            constructor() {
+                this.numbers = [];
+                this.targetNumber = 0;
+                this.selectedNumbers = [];
+                this.steps = 0;
+                this.startTime = null;
+                this.timerInterval = null;
+                this.gameActive = false;
+                this.countdownActive = false; // 新游戏倒计时状态
+                this.countdownInterval = null; // 倒计时计时器
+                this.countdownSeconds = 3; // 倒计时秒数
+                this.lastOperationTime = 0; // 上一次操作时间
+                this.cooldownActive = false; // 操作冷却状态
+                
+                this.initializeGame();
+                this.bindEvents();
+            }
+
+            initializeGame() {
+                this.generateNumbers();
+                this.generateTargetNumber();
+                this.renderNumbers();
+                this.updateUI();
+            }
+
+            generateNumbers() {
+                this.numbers = [];
+                for (let i = 0; i < 4; i++) {
+                    this.numbers.push({
+                        value: Math.floor(Math.random() * 10),
+                        eliminated: false
+                    });
+                }
+            }
+
+            generateTargetNumber() {
+                this.targetNumber = Math.floor(Math.random() * 21); // 0-20
+            }
+
+            renderNumbers() {
+                const container = document.getElementById('numbers-container');
+                container.innerHTML = '';
+                
+                this.numbers.forEach((number, index) => {
+                    const card = document.createElement('div');
+                    card.className = `number-card ${number.eliminated ? 'eliminated' : ''}`;
+                    card.textContent = number.eliminated ? '✓' : number.value;
+                    card.dataset.index = index;
+                    
+                    if (!number.eliminated) {
+                        card.addEventListener('click', () => this.selectNumber(index));
+                    }
+                    
+                    container.appendChild(card);
+                });
+            }
+
+            selectNumber(index) {
+                if (this.numbers[index].eliminated) return;
+                
+                const card = document.querySelector(`[data-index="${index}"]`);
+                
+                if (this.selectedNumbers.includes(index)) {
+                    // 取消选择
+                    this.selectedNumbers = this.selectedNumbers.filter(i => i !== index);
+                    card.classList.remove('selected');
+                } else {
+                    // 选择数字
+                    if (this.selectedNumbers.length < 2) {
+                        this.selectedNumbers.push(index);
+                        card.classList.add('selected');
+                    } else {
+                        // 已经选中2个数字，点击第三个数字时
+                        // 取消最早选中的数字，并选中新点击的数字
+                        const earliestIndex = this.selectedNumbers[0];
+                        const earliestCard = document.querySelector(`[data-index="${earliestIndex}"]`);
+                        
+                        // 取消最早选中的数字
+                        this.selectedNumbers = this.selectedNumbers.filter(i => i !== earliestIndex);
+                        earliestCard.classList.remove('selected');
+                        
+                        // 选中新点击的数字
+                        this.selectedNumbers.push(index);
+                        card.classList.add('selected');
+                    }
+                }
+                
+                this.updateOperationButtons();
+            }
+
+            updateOperationButtons() {
+                const incrementBtn = document.getElementById('increment-btn');
+                const decrementBtn = document.getElementById('decrement-btn');
+                const addBtn = document.getElementById('add-btn');
+                const subtractBtn = document.getElementById('subtract-btn');
+                
+                // 检查操作冷却时间
+                const currentTime = Date.now();
+                const timeSinceLastOp = currentTime - this.lastOperationTime;
+                const isInCooldown = timeSinceLastOp < 1000; // 1秒冷却时间
+                
+                // 如果正在冷却中，禁用所有按钮
+                if (isInCooldown || this.countdownActive) {
+                    this.disableAllButtons();
+                    return;
+                }
+                
+                // 单数字操作按钮
+                const canSingleOp = this.selectedNumbers.length === 1 && 
+                    !this.numbers[this.selectedNumbers[0]].eliminated;
+                
+                incrementBtn.disabled = !canSingleOp || 
+                    this.numbers[this.selectedNumbers[0]].value >= 20;
+                decrementBtn.disabled = !canSingleOp || 
+                    this.numbers[this.selectedNumbers[0]].value <= 0;
+                
+                // 双数字操作按钮
+                const canDoubleOp = this.selectedNumbers.length === 2 && 
+                    this.selectedNumbers.every(index => !this.numbers[index].eliminated);
+                
+                if (canDoubleOp) {
+                    const [index1, index2] = this.selectedNumbers;
+                    const num1 = this.numbers[index1].value;
+                    const num2 = this.numbers[index2].value;
+                    
+                    addBtn.disabled = (num1 + num2) > 20;
+                    // 修改相减功能：两个数字相等时也可以相减（结果为0）
+                    subtractBtn.disabled = false;
+                } else {
+                    addBtn.disabled = true;
+                    subtractBtn.disabled = true;
+                }
+            }
+
+            performOperation(operation) {
+                if (!this.gameActive) {
+                    this.startGame();
+                }
+                
+                // 记录操作时间
+                this.lastOperationTime = Date.now();
+                this.steps++;
+                
+                let resultIndex = null;
+                
+                switch (operation) {
+                    case 'increment':
+                        this.incrementNumber();
+                        // 单数字操作后保持选择状态
+                        resultIndex = this.selectedNumbers[0];
+                        break;
+                    case 'decrement':
+                        this.decrementNumber();
+                        // 单数字操作后保持选择状态
+                        resultIndex = this.selectedNumbers[0];
+                        break;
+                    case 'add':
+                        resultIndex = this.addNumbers();
+                        break;
+                    case 'subtract':
+                        resultIndex = this.subtractNumbers();
+                        break;
+                }
+                
+                this.checkElimination();
+                this.renderNumbers();
+                this.updateUI();
+                
+                // 优化操作后的选择状态
+                if (resultIndex !== null && !this.numbers[resultIndex].eliminated) {
+                    // 自动选择结果数字
+                    this.selectedNumbers = [resultIndex];
+                    // 更新UI显示选择状态
+                    const card = document.querySelector(`[data-index="${resultIndex}"]`);
+                    if (card) {
+                        card.classList.add('selected');
+                    }
+                } else {
+                    this.selectedNumbers = [];
+                }
+                
+                this.updateOperationButtons();
+                
+                // 设置冷却时间后重新启用按钮
+                setTimeout(() => {
+                    this.updateOperationButtons();
+                }, 1000);
+                
+                if (this.checkWin()) {
+                    this.endGame();
+                }
+            }
+
+            incrementNumber() {
+                const index = this.selectedNumbers[0];
+                this.numbers[index].value++;
+            }
+
+            decrementNumber() {
+                const index = this.selectedNumbers[0];
+                this.numbers[index].value--;
+            }
+
+            addNumbers() {
+                const [index1, index2] = this.selectedNumbers;
+                const sum = this.numbers[index1].value + this.numbers[index2].value;
+                
+                // 随机选择一个数字来存储结果，另一个数字被消除
+                const resultIndex = Math.random() > 0.5 ? index1 : index2;
+                const eliminateIndex = resultIndex === index1 ? index2 : index1;
+                
+                this.numbers[resultIndex].value = sum;
+                this.numbers[eliminateIndex].eliminated = true;
+                
+                // 返回结果数字的索引，用于自动选择
+                return resultIndex;
+            }
+
+            subtractNumbers() {
+                const [index1, index2] = this.selectedNumbers;
+                const num1 = this.numbers[index1].value;
+                const num2 = this.numbers[index2].value;
+                
+                let result, eliminateIndex;
+                
+                if (num1 >= num2) {
+                    result = num1 - num2;
+                    eliminateIndex = index2;
+                } else {
+                    result = num2 - num1;
+                    eliminateIndex = index1;
+                }
+                
+                // 保留结果在未被消除的数字上
+                const resultIndex = eliminateIndex === index1 ? index2 : index1;
+                this.numbers[resultIndex].value = result;
+                this.numbers[eliminateIndex].eliminated = true;
+                
+                // 返回结果数字的索引，用于自动选择
+                return resultIndex;
+            }
+
+            checkElimination() {
+                this.numbers.forEach((number, index) => {
+                    if (!number.eliminated && number.value === this.targetNumber) {
+                        number.eliminated = true;
+                        this.showMessage(`数字 ${number.value} 被消除！`, 'success');
+                    }
+                });
+            }
+
+            checkWin() {
+                return this.numbers.every(number => number.eliminated);
+            }
+
+            startGame() {
+                this.gameActive = true;
+                this.startTime = new Date();
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+            }
+
+            endGame() {
+                this.gameActive = false;
+                clearInterval(this.timerInterval);
+                
+                const endTime = new Date();
+                const timeElapsed = Math.floor((endTime - this.startTime) / 1000);
+                const minutes = Math.floor(timeElapsed / 60);
+                const seconds = timeElapsed % 60;
+                
+                this.showMessage(
+                    `恭喜！你赢了！用时：${minutes}分${seconds}秒，步数：${this.steps}`,
+                    'success'
+                );
+            }
+
+            startCountdown() {
+                this.countdownActive = true;
+                this.countdownSeconds = 3;
+                
+                // 立即加载新界面
+                this.initializeGame();
+                
+                // 禁用所有操作按钮
+                this.disableAllButtons();
+                
+                // 显示倒计时
+                this.showMessage(`游戏将在 ${this.countdownSeconds} 秒后开始...`, 'info');
+                
+                this.countdownInterval = setInterval(() => {
+                    this.countdownSeconds--;
+                    
+                    if (this.countdownSeconds > 0) {
+                        this.showMessage(`游戏将在 ${this.countdownSeconds} 秒后开始...`, 'info');
+                    } else {
+                        // 倒计时结束
+                        clearInterval(this.countdownInterval);
+                        this.countdownActive = false;
+                        document.getElementById('message').style.display = 'none';
+                        
+                        // 开始游戏计时
+                        this.startGame();
+                        this.updateOperationButtons();
+                    }
+                }, 1000);
+            }
+
+            updateTimer() {
+                if (!this.gameActive) return;
+                
+                const currentTime = new Date();
+                const timeElapsed = Math.floor((currentTime - this.startTime) / 1000);
+                const minutes = Math.floor(timeElapsed / 60).toString().padStart(2, '0');
+                const seconds = (timeElapsed % 60).toString().padStart(2, '0');
+                
+                document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+            }
+
+            disableAllButtons() {
+                const buttons = [
+                    document.getElementById('increment-btn'),
+                    document.getElementById('decrement-btn'),
+                    document.getElementById('add-btn'),
+                    document.getElementById('subtract-btn')
+                ];
+                
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                });
+            }
+
+            updateUI() {
+                document.getElementById('target-number').textContent = this.targetNumber;
+                document.getElementById('steps').textContent = this.steps;
+            }
+
+            showMessage(text, type) {
+                const messageEl = document.getElementById('message');
+                messageEl.textContent = text;
+                messageEl.className = `message ${type}`;
+                messageEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 3000);
+            }
+
+            newGame() {
+                this.selectedNumbers = [];
+                this.steps = 0;
+                this.gameActive = false;
+                this.cooldownActive = false;
+                clearInterval(this.timerInterval);
+                clearInterval(this.countdownInterval);
+                
+                document.getElementById('timer').textContent = '00:00';
+                document.getElementById('steps').textContent = '0';
+                document.getElementById('message').style.display = 'none';
+                
+                // 开始新游戏倒计时
+                this.startCountdown();
+            }
+
+            bindEvents() {
+                document.getElementById('increment-btn').addEventListener('click', 
+                    () => this.performOperation('increment'));
+                document.getElementById('decrement-btn').addEventListener('click', 
+                    () => this.performOperation('decrement'));
+                document.getElementById('add-btn').addEventListener('click', 
+                    () => this.performOperation('add'));
+                document.getElementById('subtract-btn').addEventListener('click', 
+                    () => this.performOperation('subtract'));
+                document.getElementById('new-game-btn').addEventListener('click', 
+                    () => this.newGame());
+                document.getElementById('back-btn').addEventListener('click', 
+                    () => this.backToMainMenu());
+            }
+
+            backToMainMenu() {
+                // 跳转回主界面
+                window.location.href = 'main_menu.html';
+            }
+        }
+
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            new NumberGame();
+        });
+    </script>
+</body>
+</html>

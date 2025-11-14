@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字消除游戏 - 主界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #e2e8f0;
+        }
+
+        .main-container {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .logo {
+            margin-bottom: 50px;
+        }
+
+        .logo h1 {
+            color: #60a5fa;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 8px rgba(96, 165, 250, 0.3);
+        }
+
+        .logo .subtitle {
+            color: #94a3b8;
+            font-size: 1.3rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.6);
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+        }
+
+        .start-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            .main-container {
+                padding: 40px 20px;
+            }
+            
+            .logo h1 {
+                font-size: 2.8rem;
+            }
+            
+            .start-btn {
+                padding: 18px 30px;
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="logo">
+            <h1>数字消除</h1>
+            <div class="subtitle">MATCH & ELIMINATE</div>
+        </div>
+        
+        <button class="start-btn" onclick="startGame()">开始游戏</button>
+    </div>
+
+    <script>
+        function startGame() {
+            // 跳转到游戏界面
+            window.location.href = 'number_game.html';
+        }
+
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                startGame();
+            }
+        });
+    </script>
+</body>
+</html>
