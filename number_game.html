@@ -264,6 +264,10 @@
                 <div class="info-label">步数</div>
                 <div class="info-value" id="steps">0</div>
             </div>
+            <div class="info-item">
+                <div class="info-label">消除</div>
+                <div class="info-value" id="eliminations">0/10</div>
+            </div>
         </div>
         
         <div class="target-section">
@@ -300,6 +304,8 @@
                 this.targetNumber = 0;
                 this.selectedNumbers = [];
                 this.steps = 0;
+                this.eliminations = 0; // 消除计数器
+                this.eliminationsToWin = 10; // 需要消除的数量来获胜
                 this.startTime = null;
                 this.timerInterval = null;
                 this.gameActive = false;
@@ -320,11 +326,26 @@
                 this.updateUI();
             }
 
+            // 加权随机数字生成函数（0-20，10以下权重1.5倍）
+            generateWeightedRandom() {
+                // 生成0-20的随机数，但10以下的数字有1.5倍权重
+                const randomValue = Math.random();
+                
+                // 计算权重分布：10以下数字占60%，10以上数字占40%
+                if (randomValue < 0.6) {
+                    // 生成0-9的数字（权重1.5倍）
+                    return Math.floor(Math.random() * 10);
+                } else {
+                    // 生成10-20的数字
+                    return Math.floor(Math.random() * 11) + 10;
+                }
+            }
+
             generateNumbers() {
                 this.numbers = [];
                 for (let i = 0; i < 4; i++) {
                     this.numbers.push({
-                        value: Math.floor(Math.random() * 10),
+                        value: this.generateWeightedRandom(),
                         eliminated: false
                     });
                 }
@@ -509,6 +530,12 @@
                 this.numbers[resultIndex].value = sum;
                 this.numbers[eliminateIndex].eliminated = true;
                 
+                // 在被消除的位置生成新的随机数字
+                this.numbers[eliminateIndex] = {
+                    value: this.generateWeightedRandom(),
+                    eliminated: false
+                };
+                
                 // 返回结果数字的索引，用于自动选择
                 return resultIndex;
             }
@@ -533,6 +560,12 @@
                 this.numbers[resultIndex].value = result;
                 this.numbers[eliminateIndex].eliminated = true;
                 
+                // 在被消除的位置生成新的随机数字
+                this.numbers[eliminateIndex] = {
+                    value: this.generateWeightedRandom(),
+                    eliminated: false
+                };
+                
                 // 返回结果数字的索引，用于自动选择
                 return resultIndex;
             }
@@ -541,13 +574,20 @@
                 this.numbers.forEach((number, index) => {
                     if (!number.eliminated && number.value === this.targetNumber) {
                         number.eliminated = true;
-                        this.showMessage(`数字 ${number.value} 被消除！`, 'success');
+                        this.eliminations++; // 增加消除计数
+                        this.showMessage(`数字 ${number.value} 被消除！ (${this.eliminations}/${this.eliminationsToWin})`, 'success');
+                        
+                        // 在被消除的位置生成新的随机数字
+                        this.numbers[index] = {
+                            value: this.generateWeightedRandom(),
+                            eliminated: false
+                        };
                     }
                 });
             }
 
             checkWin() {
-                return this.numbers.every(number => number.eliminated);
+                return this.eliminations >= this.eliminationsToWin;
             }
 
             startGame() {
@@ -629,6 +669,7 @@
             updateUI() {
                 document.getElementById('target-number').textContent = this.targetNumber;
                 document.getElementById('steps').textContent = this.steps;
+                document.getElementById('eliminations').textContent = `${this.eliminations}/${this.eliminationsToWin}`;
             }
 
             showMessage(text, type) {
@@ -645,6 +686,7 @@
             newGame() {
                 this.selectedNumbers = [];
                 this.steps = 0;
+                this.eliminations = 0; // 重置消除计数器
                 this.gameActive = false;
                 this.cooldownActive = false;
                 clearInterval(this.timerInterval);
@@ -652,6 +694,7 @@
                 
                 document.getElementById('timer').textContent = '00:00';
                 document.getElementById('steps').textContent = '0';
+                document.getElementById('eliminations').textContent = '0/10';
                 document.getElementById('message').style.display = 'none';
                 
                 // 开始新游戏倒计时
