@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字合并游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #e2e8f0;
+        }
+
+        .game-container {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .game-title {
+            color: #60a5fa;
+            font-size: 1.8rem;
+            margin-bottom: 25px; /* Adjusted margin for consistency */
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(96, 165, 250, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Use fr units for responsiveness */
+            gap: 15px; /* Increased gap */
+            margin-bottom: 25px; /* Consistent margin */
+        }
+
+        .cell {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Gradient background */
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: grab;
+            user-select: none;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem; /* Slightly larger font */
+            font-weight: bold;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .cell.selected {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            border-color: #60a5fa;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px; /* Consistent margin */
+            justify-content: center; /* Center the buttons */
+        }
+
+        button {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Gradient background */
+            color: white;
+            border: none;
+            padding: 12px 25px; /* Adjusted padding */
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem; /* Adjusted font size */
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid #2563eb;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn {
+            background: #718096;
+            color: white;
+            border: 1px solid #4a5568;
+            max-width: 150px; /* Limit width */
+        }
+
+        .back-btn:hover {
+            background: #4a5568;
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .game-title {
+                font-size: 1.5rem;
+            }
+            
+            .cell {
+                font-size: 1.5rem;
+                min-height: 70px;
+            }
+            
+            button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">数字合并游戏</h1>
+        </div>
+        
+        <div class="grid" id="gameGrid">
+            <!-- 数字单元格将在这里生成 -->
+        </div>
+        <div class="controls">
+            <button id="addBtn" class="operation-btn">+</button>
+            <button id="subtractBtn" class="operation-btn">-</button>
+        </div>
+
+        <div class="game-controls">
+            <button class="control-btn back-btn" id="back-btn">返回主界面</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameGrid = document.getElementById('gameGrid');
+            const addBtn = document.getElementById('addBtn');
+            const subtractBtn = document.getElementById('subtractBtn');
+            const backBtn = document.getElementById('back-btn');
+
+            let numbers = []; // 更改为存储对象：{ value: num, eliminated: false }
+            let selectedCells = [];
+
+            // 初始化游戏
+            function initGame() {
+                numbers = Array.from({ length: 9 }, () => ({ value: Math.floor(Math.random() * 10), eliminated: false }));
+                renderGrid();
+            }
+
+            // 渲染网格
+            function renderGrid() {
+                gameGrid.innerHTML = '';
+                numbers.forEach((item, index) => {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.index = index;
+                    cell.textContent = item.eliminated ? '✓' : item.value;
+                    if (!item.eliminated) {
+                        cell.addEventListener('mousedown', (e) => startDrag(e, index));
+                    } else {
+                        cell.classList.add('eliminated'); // 添加eliminated类，以便在CSS中设置样式
+                        cell.style.cursor = 'not-allowed'; // 禁用拖动
+                    }
+                    gameGrid.appendChild(cell);
+                });
+            }
+
+            // 拖放逻辑占位符
+            let draggedIndex = null;
+            function startDrag(e, index) {
+                if (numbers[index].eliminated) return; // 不允许拖动已消除的数字
+                // Clear any previous selection when a new drag starts
+                clearSelection();
+                draggedIndex = index;
+                const cell = e.target;
+                cell.classList.add('selected'); // Highlight the dragged cell
+                document.addEventListener('mouseup', endDrag);
+                e.preventDefault();
+            }
+
+            function endDrag(e) {
+                if (draggedIndex !== null) {
+                    const targetCell = e.target.closest('.cell');
+                    if (targetCell) {
+                        const targetIndex = parseInt(targetCell.dataset.index);
+                        if (numbers[targetIndex].eliminated) { // 不允许将数字拖放到已消除的单元格
+                            clearSelection();
+                            draggedIndex = null;
+                            document.removeEventListener('mouseup', endDrag);
+                            alert('不能将数字拖放到已消除的单元格！');
+                            return;
+                        }
+                        if (draggedIndex !== targetIndex) {
+                            selectedCells = [draggedIndex, targetIndex];
+                            // Highlight selected cells
+                            document.querySelectorAll('.cell').forEach((cell, idx) => {
+                                if (idx === draggedIndex || idx === targetIndex) {
+                                    cell.classList.add('selected');
+                                } else {
+                                    // Remove selection from other cells that might have been selected
+                                    cell.classList.remove('selected');
+                                }
+                            });
+                        } else {
+                            // If dragged and dropped on the same cell, just clear the selection
+                            clearSelection();
+                        }
+                    }
+                     else {
+                        // If dropped outside any cell, clear selection
+                        clearSelection();
+                    }
+                    draggedIndex = null;
+                }
+                document.removeEventListener('mouseup', endDrag);
+            }
+
+            function clearSelection() {
+                document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('selected'));
+                selectedCells = [];
+            }
+
+
+            // 运算逻辑占位符
+            function performOperation(operator) {
+                if (selectedCells.length === 2) {
+                    const [idxA, idxB] = selectedCells;
+                    
+                    if (numbers[idxA].eliminated || numbers[idxB].eliminated) {
+                        alert('不能对已消除的数字进行操作！');
+                        clearSelection();
+                        return;
+                    }
+
+                    let valA = numbers[idxA].value;
+                    let valB = numbers[idxB].value;
+
+                    if (operator === '+') {
+                        numbers[idxB].value = valA + valB;
+                    } else if (operator === '-') {
+                        numbers[idxB].value = valB - valA; // 题目要求b变为a+b或a-b的值，b不变。这里我理解为 B = B +- A
+                    }
+                    // 确保数字在0-99之间，或者根据游戏规则有其他限制
+                    numbers[idxB].value = Math.max(0, Math.min(99, numbers[idxB].value)); // 限制在0-99
+                    clearSelection(); // Clear selection after operation
+                    renderGrid();
+                    checkAndEliminate();
+                } else {
+                    alert('请选择两个数字进行操作！');
+                }
+            }
+
+            addBtn.addEventListener('click', () => performOperation('+'));
+            subtractBtn.addEventListener('click', () => performOperation('-'));
+            backBtn.addEventListener('click', () => {
+                window.location.href = 'main_menu.html';
+            });
+
+            // 消除逻辑占位符
+            function checkAndEliminate() {
+                const counts = {};
+                numbers.forEach(item => {
+                    if (!item.eliminated) { // 只统计未消除的数字
+                        counts[item.value] = (counts[item.value] || 0) + 1;
+                    }
+                });
+
+                const numbersToEliminate = Object.keys(counts).filter(num => counts[num] > 1).map(Number);
+
+                if (numbersToEliminate.length > 0) {
+                    numbers.forEach(item => {
+                        if (numbersToEliminate.includes(item.value)) {
+                            item.eliminated = true; // 标记为已消除
+                        }
+                    });
+                    renderGrid();
+                    // 消除后再次检查，防止连锁消除 (如果还有可消除的，会继续标记)
+                    checkAndEliminate();
+                }
+            }
+
+            initGame();
+        });
+    </script>
+</body>
+</html>

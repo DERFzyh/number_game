@@ -103,6 +103,7 @@
         </div>
         
         <button class="start-btn" onclick="startGame()">开始游戏</button>
+        <button class="start-btn" onclick="startNumberMergeGame()" style="margin-top: 20px;">数字合并游戏</button>
     </div>
 
     <script>
@@ -111,10 +112,21 @@
             window.location.href = 'number_game.html';
         }
 
+        function startNumberMergeGame() {
+            // 跳转到数字合并游戏界面
+            window.location.href = 'number_merge_game.html';
+        }
+
         // 添加键盘快捷键支持
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Enter' || event.key === ' ') {
-                startGame();
+                // 这里可以根据需要决定是启动哪个游戏，或者让用户选择
+                // 目前，我们让Enter键启动第一个游戏，空格键启动第二个游戏
+                if (event.key === 'Enter') {
+                    startGame();
+                } else if (event.key === ' ') {
+                    startNumberMergeGame();
+                }
             }
         });
     </script>
