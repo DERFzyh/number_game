@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -83,11 +84,11 @@
             .main-container {
                 padding: 40px 20px;
             }
-            
+
             .logo h1 {
                 font-size: 2.8rem;
             }
-            
+
             .start-btn {
                 padding: 18px 30px;
                 font-size: 1.3rem;
@@ -95,40 +96,156 @@
         }
     </style>
 </head>
+
 <body>
     <div class="main-container">
         <div class="logo">
             <h1>数字消除</h1>
             <div class="subtitle">MATCH & ELIMINATE</div>
         </div>
-        
+
         <button class="start-btn" onclick="startGame()">开始游戏</button>
         <button class="start-btn" onclick="startNumberMergeGame()" style="margin-top: 20px;">数字合并游戏</button>
+        <button class="settings-btn" onclick="openSettings()">游戏设置</button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <h2 class="settings-title">游戏设置</h2>
+
+            <div class="setting-group">
+                <label class="setting-label">最大计算结果</label>
+                <input type="number" id="maxResult" class="setting-input" value="100" min="10">
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">生成数字范围</label>
+                <div class="setting-row">
+                    <input type="number" id="minNum" class="setting-input" placeholder="最小值" value="0">
+                    <span>-</span>
+                    <input type="number" id="maxNum" class="setting-input" placeholder="最大值" value="10">
+                </div>
+                <div class="setting-checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="multiple10"> 整十
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="multiple100"> 整百
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">允许使用的运算符</label>
+                <div class="setting-checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="allowAdd" checked> 加法 (+)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="allowSub" checked> 减法 (-)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="allowMul"> 乘法 (×)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="allowDiv"> 除法 (÷)
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button class="btn-secondary" onclick="closeSettings()">取消</button>
+                <button class="btn-primary" onclick="saveSettings()">保存设置</button>
+            </div>
+        </div>
     </div>
 
     <script>
         function startGame() {
-            // 跳转到游戏界面
             window.location.href = 'number_game.html';
         }
 
         function startNumberMergeGame() {
-            // 跳转到数字合并游戏界面
             window.location.href = 'number_merge_game.html';
         }
 
-        // 添加键盘快捷键支持
-        document.addEventListener('keydown', function(event) {
+        // Settings Logic
+        const settingsModal = document.getElementById('settingsModal');
+
+        function openSettings() {
+            loadSettings();
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettings() {
+            settingsModal.classList.remove('active');
+        }
+
+        function saveSettings() {
+            const settings = {
+                maxResult: parseInt(document.getElementById('maxResult').value) || 100,
+                minNum: parseInt(document.getElementById('minNum').value) || 0,
+                maxNum: parseInt(document.getElementById('maxNum').value) || 10,
+                multiple10: document.getElementById('multiple10').checked,
+                multiple100: document.getElementById('multiple100').checked,
+                allowAdd: document.getElementById('allowAdd').checked,
+                allowSub: document.getElementById('allowSub').checked,
+                allowMul: document.getElementById('allowMul').checked,
+                allowDiv: document.getElementById('allowDiv').checked
+            };
+
+            // Validate
+            if (settings.minNum >= settings.maxNum) {
+                alert('最小值必须小于最大值！');
+                return;
+            }
+
+            if (!settings.allowAdd && !settings.allowSub && !settings.allowMul && !settings.allowDiv) {
+                alert('必须至少选择一种运算符！');
+                return;
+            }
+
+            localStorage.setItem('gameSettings', JSON.stringify(settings));
+            closeSettings();
+            alert('设置已保存！');
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('gameSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                document.getElementById('maxResult').value = settings.maxResult;
+                document.getElementById('minNum').value = settings.minNum;
+                document.getElementById('maxNum').value = settings.maxNum;
+                document.getElementById('multiple10').checked = settings.multiple10;
+                document.getElementById('multiple100').checked = settings.multiple100;
+                document.getElementById('allowAdd').checked = settings.allowAdd;
+                document.getElementById('allowSub').checked = settings.allowSub;
+                document.getElementById('allowMul').checked = settings.allowMul;
+                document.getElementById('allowDiv').checked = settings.allowDiv;
+            }
+        }
+
+        // Close modal when clicking outside
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeSettings();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' || event.key === ' ') {
-                // 这里可以根据需要决定是启动哪个游戏，或者让用户选择
-                // 目前，我们让Enter键启动第一个游戏，空格键启动第二个游戏
-                if (event.key === 'Enter') {
-                    startGame();
-                } else if (event.key === ' ') {
-                    startNumberMergeGame();
+                if (!settingsModal.classList.contains('active')) {
+                    if (event.key === 'Enter') {
+                        startGame();
+                    } else if (event.key === ' ') {
+                        startNumberMergeGame();
+                    }
                 }
             }
         });
     </script>
 </body>
+
 </html>

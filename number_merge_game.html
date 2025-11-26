@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,20 +38,25 @@
         .game-title {
             color: #60a5fa;
             font-size: 1.8rem;
-            margin-bottom: 25px; /* Adjusted margin for consistency */
+            margin-bottom: 25px;
+            /* Adjusted margin for consistency */
             font-weight: 600;
             text-shadow: 0 2px 4px rgba(96, 165, 250, 0.3);
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Use fr units for responsiveness */
-            gap: 15px; /* Increased gap */
-            margin-bottom: 25px; /* Consistent margin */
+            grid-template-columns: repeat(3, 1fr);
+            /* Use fr units for responsiveness */
+            gap: 15px;
+            /* Increased gap */
+            margin-bottom: 25px;
+            /* Consistent margin */
         }
 
         .cell {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Gradient background */
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            /* Gradient background */
             color: white;
             border-radius: 12px;
             padding: 20px;
@@ -61,7 +67,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem; /* Slightly larger font */
+            font-size: 1.8rem;
+            /* Slightly larger font */
             font-weight: bold;
             border: 2px solid transparent;
             box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
@@ -78,18 +85,23 @@
         .controls {
             display: flex;
             gap: 10px;
-            margin-bottom: 25px; /* Consistent margin */
-            justify-content: center; /* Center the buttons */
+            margin-bottom: 25px;
+            /* Consistent margin */
+            justify-content: center;
+            /* Center the buttons */
         }
 
         button {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Gradient background */
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            /* Gradient background */
             color: white;
             border: none;
-            padding: 12px 25px; /* Adjusted padding */
+            padding: 12px 25px;
+            /* Adjusted padding */
             border-radius: 8px;
             cursor: pointer;
-            font-size: 1.1rem; /* Adjusted font size */
+            font-size: 1.1rem;
+            /* Adjusted font size */
             font-weight: 600;
             transition: all 0.3s ease;
             border: 1px solid #2563eb;
@@ -129,7 +141,8 @@
             background: #718096;
             color: white;
             border: 1px solid #4a5568;
-            max-width: 150px; /* Limit width */
+            max-width: 150px;
+            /* Limit width */
         }
 
         .back-btn:hover {
@@ -140,56 +153,265 @@
             .game-container {
                 padding: 20px;
             }
-            
+
             .game-title {
                 font-size: 1.5rem;
             }
-            
+
             .cell {
                 font-size: 1.5rem;
                 min-height: 70px;
             }
-            
+
             button {
                 padding: 10px 20px;
                 font-size: 1rem;
             }
         }
     </style>
+    <style>
+        /* New Animations and Effects */
+        @keyframes pop {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+                background: #60a5fa;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes eliminate {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+                background: #4ade80;
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 0.4;
+            }
+        }
+
+        .cell.merge-effect {
+            animation: pop 0.4s ease;
+        }
+
+        .cell.eliminate-effect {
+            animation: eliminate 0.6s ease forwards;
+        }
+
+        /* Drag Visuals */
+        .cell.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.6);
+            border: 2px dashed #60a5fa;
+        }
+
+        .cell.drag-over {
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid #60a5fa;
+            transform: scale(1.05);
+        }
+
+        /* Success Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #3b82f6;
+            box-shadow: 0 0 50px rgba(59, 130, 246, 0.5);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 2.5rem;
+            color: #60a5fa;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+        }
+
+        .modal-text {
+            font-size: 1.2rem;
+            color: #e2e8f0;
+            margin-bottom: 30px;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
 </head>
+
 <body>
     <div class="game-container">
         <div class="game-header">
             <h1 class="game-title">数字合并游戏</h1>
         </div>
-        
+
         <div class="grid" id="gameGrid">
             <!-- 数字单元格将在这里生成 -->
         </div>
         <div class="controls">
             <button id="addBtn" class="operation-btn">+</button>
             <button id="subtractBtn" class="operation-btn">-</button>
+            <button id="multiplyBtn" class="operation-btn">×</button>
+            <button id="divideBtn" class="operation-btn">÷</button>
         </div>
 
         <div class="game-controls">
+            <button class="control-btn new-game-btn" id="reshuffle-btn"
+                style="background: #d97706; border-color: #b45309;">重置手牌</button>
             <button class="control-btn back-btn" id="back-btn">返回主界面</button>
         </div>
     </div>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <h2 class="modal-title">恭喜胜利!</h2>
+            <p class="modal-text">你已成功消除所有数字！</p>
+            <button class="modal-btn" onclick="location.reload()">再玩一次</button>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const gameGrid = document.getElementById('gameGrid');
             const addBtn = document.getElementById('addBtn');
             const subtractBtn = document.getElementById('subtractBtn');
+            const multiplyBtn = document.getElementById('multiplyBtn');
+            const divideBtn = document.getElementById('divideBtn');
             const backBtn = document.getElementById('back-btn');
+            const reshuffleBtn = document.getElementById('reshuffle-btn');
+            const successModal = document.getElementById('successModal');
 
             let numbers = []; // 更改为存储对象：{ value: num, eliminated: false }
             let selectedCells = [];
 
+            // Default Settings
+            let settings = {
+                maxResult: 100,
+                minNum: 0,
+                maxNum: 10,
+                multiple10: false,
+                multiple100: false,
+                allowAdd: true,
+                allowSub: true,
+                allowMul: false,
+                allowDiv: false
+            };
+
+            // Load Settings
+            const savedSettings = localStorage.getItem('gameSettings');
+            if (savedSettings) {
+                settings = JSON.parse(savedSettings);
+            }
+
+            // Apply Operator Settings
+            if (!settings.allowAdd) addBtn.style.display = 'none';
+            if (!settings.allowSub) subtractBtn.style.display = 'none';
+            if (!settings.allowMul) multiplyBtn.style.display = 'none';
+            if (!settings.allowDiv) divideBtn.style.display = 'none';
+
             // 初始化游戏
             function initGame() {
-                numbers = Array.from({ length: 9 }, () => ({ value: Math.floor(Math.random() * 10), eliminated: false }));
+                numbers = Array.from({ length: 9 }, () => ({ value: generateRandomNumber(), eliminated: false }));
                 renderGrid();
+            }
+
+            function generateRandomNumber() {
+                let min = settings.minNum;
+                let max = settings.maxNum;
+
+                // Adjust range if multiples are required
+                if (settings.multiple10) {
+                    min = Math.ceil(min / 10) * 10;
+                    max = Math.floor(max / 10) * 10;
+                } else if (settings.multiple100) {
+                    min = Math.ceil(min / 100) * 100;
+                    max = Math.floor(max / 100) * 100;
+                }
+
+                if (min > max) return min; // Fallback
+
+                let num = Math.floor(Math.random() * (max - min + 1)) + min;
+
+                if (settings.multiple10) {
+                    num = Math.round(num / 10) * 10;
+                } else if (settings.multiple100) {
+                    num = Math.round(num / 100) * 100;
+                }
+
+                return num;
             }
 
             // 渲染网格
@@ -200,77 +422,95 @@
                     cell.classList.add('cell');
                     cell.dataset.index = index;
                     cell.textContent = item.eliminated ? '✓' : item.value;
+
                     if (!item.eliminated) {
-                        cell.addEventListener('mousedown', (e) => startDrag(e, index));
+                        cell.draggable = true; // Enable native drag
+                        cell.addEventListener('dragstart', (e) => handleDragStart(e, index));
+                        cell.addEventListener('dragover', handleDragOver);
+                        cell.addEventListener('dragleave', handleDragLeave);
+                        cell.addEventListener('drop', (e) => handleDrop(e, index));
+                        cell.addEventListener('dragend', handleDragEnd);
+
+                        // Click selection fallback
+                        cell.addEventListener('click', () => toggleSelection(index));
                     } else {
-                        cell.classList.add('eliminated'); // 添加eliminated类，以便在CSS中设置样式
-                        cell.style.cursor = 'not-allowed'; // 禁用拖动
+                        cell.classList.add('eliminated');
                     }
+
+                    if (selectedCells.includes(index)) {
+                        cell.classList.add('selected');
+                    }
+
                     gameGrid.appendChild(cell);
                 });
             }
 
-            // 拖放逻辑占位符
+            // 拖放逻辑
             let draggedIndex = null;
-            function startDrag(e, index) {
-                if (numbers[index].eliminated) return; // 不允许拖动已消除的数字
-                // Clear any previous selection when a new drag starts
-                clearSelection();
+
+            function handleDragStart(e, index) {
                 draggedIndex = index;
-                const cell = e.target;
-                cell.classList.add('selected'); // Highlight the dragged cell
-                document.addEventListener('mouseup', endDrag);
-                e.preventDefault();
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                // Create a custom drag image if needed, or rely on browser default
             }
 
-            function endDrag(e) {
-                if (draggedIndex !== null) {
-                    const targetCell = e.target.closest('.cell');
-                    if (targetCell) {
-                        const targetIndex = parseInt(targetCell.dataset.index);
-                        if (numbers[targetIndex].eliminated) { // 不允许将数字拖放到已消除的单元格
-                            clearSelection();
-                            draggedIndex = null;
-                            document.removeEventListener('mouseup', endDrag);
-                            alert('不能将数字拖放到已消除的单元格！');
-                            return;
-                        }
-                        if (draggedIndex !== targetIndex) {
-                            selectedCells = [draggedIndex, targetIndex];
-                            // Highlight selected cells
-                            document.querySelectorAll('.cell').forEach((cell, idx) => {
-                                if (idx === draggedIndex || idx === targetIndex) {
-                                    cell.classList.add('selected');
-                                } else {
-                                    // Remove selection from other cells that might have been selected
-                                    cell.classList.remove('selected');
-                                }
-                            });
-                        } else {
-                            // If dragged and dropped on the same cell, just clear the selection
-                            clearSelection();
-                        }
-                    }
-                     else {
-                        // If dropped outside any cell, clear selection
-                        clearSelection();
-                    }
-                    draggedIndex = null;
+            function handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault(); // Necessary. Allows us to drop.
                 }
-                document.removeEventListener('mouseup', endDrag);
+                e.dataTransfer.dropEffect = 'move';
+                e.target.classList.add('drag-over');
+                return false;
+            }
+
+            function handleDragLeave(e) {
+                e.target.classList.remove('drag-over');
+            }
+
+            function handleDrop(e, targetIndex) {
+                e.stopPropagation(); // stops the browser from redirecting.
+                e.target.classList.remove('drag-over');
+
+                if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                    // Select both cells
+                    selectedCells = [draggedIndex, targetIndex];
+                    renderGrid(); // Re-render to show selection
+                }
+                return false;
+            }
+
+            function handleDragEnd(e) {
+                e.target.classList.remove('dragging');
+                document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('drag-over'));
+            }
+
+            function toggleSelection(index) {
+                if (selectedCells.includes(index)) {
+                    selectedCells = selectedCells.filter(i => i !== index);
+                } else {
+                    if (selectedCells.length < 2) {
+                        selectedCells.push(index);
+                    } else {
+                        // Replace the first one
+                        selectedCells.shift();
+                        selectedCells.push(index);
+                    }
+                }
+                renderGrid();
             }
 
             function clearSelection() {
-                document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('selected'));
                 selectedCells = [];
+                renderGrid();
             }
 
 
-            // 运算逻辑占位符
+            // 运算逻辑
             function performOperation(operator) {
                 if (selectedCells.length === 2) {
                     const [idxA, idxB] = selectedCells;
-                    
+
                     if (numbers[idxA].eliminated || numbers[idxB].eliminated) {
                         alert('不能对已消除的数字进行操作！');
                         clearSelection();
@@ -279,53 +519,184 @@
 
                     let valA = numbers[idxA].value;
                     let valB = numbers[idxB].value;
+                    let newValue;
 
                     if (operator === '+') {
-                        numbers[idxB].value = valA + valB;
+                        newValue = valA + valB;
                     } else if (operator === '-') {
-                        numbers[idxB].value = valB - valA; // 题目要求b变为a+b或a-b的值，b不变。这里我理解为 B = B +- A
+                        newValue = Math.abs(valB - valA); // Absolute value
+                    } else if (operator === '*') {
+                        newValue = valA * valB;
+                    } else if (operator === '/') {
+                        // Division Logic: Must be integer result
+                        if (valA === 0 && valB === 0) {
+                            alert('0不能除以0！');
+                            clearSelection();
+                            return;
+                        }
+
+                        // Try B / A
+                        if (valA !== 0 && valB % valA === 0) {
+                            newValue = valB / valA;
+                        }
+                        // Try A / B
+                        else if (valB !== 0 && valA % valB === 0) {
+                            newValue = valA / valB;
+                        } else {
+                            alert('除法结果必须为整数！');
+                            clearSelection();
+                            return;
+                        }
                     }
-                    // 确保数字在0-99之间，或者根据游戏规则有其他限制
-                    numbers[idxB].value = Math.max(0, Math.min(99, numbers[idxB].value)); // 限制在0-99
-                    clearSelection(); // Clear selection after operation
+
+                    // Check Max Result Setting
+                    if (newValue > settings.maxResult) {
+                        alert(`计算结果不能超过 ${settings.maxResult}！`);
+                        clearSelection();
+                        return;
+                    }
+
+                    // Update value
+                    numbers[idxB].value = newValue;
+
+                    // Add animation class to the target cell
+                    // We need to re-render first to update DOM, then add class
                     renderGrid();
+                    const targetCell = gameGrid.children[idxB];
+                    targetCell.classList.add('merge-effect');
+                    setTimeout(() => targetCell.classList.remove('merge-effect'), 400);
+
+                    clearSelection();
                     checkAndEliminate();
                 } else {
                     alert('请选择两个数字进行操作！');
                 }
             }
 
+            // Reshuffle Logic
+            function reshuffle() {
+                // Only reshuffle non-eliminated numbers
+                numbers.forEach(item => {
+                    if (!item.eliminated) {
+                        item.value = generateRandomNumber();
+                    }
+                });
+                renderGrid();
+                // Check if new numbers trigger elimination
+                checkAndEliminate();
+            }
+
             addBtn.addEventListener('click', () => performOperation('+'));
             subtractBtn.addEventListener('click', () => performOperation('-'));
+            multiplyBtn.addEventListener('click', () => performOperation('*'));
+            divideBtn.addEventListener('click', () => performOperation('/'));
+
+            reshuffleBtn.addEventListener('click', reshuffle);
+
             backBtn.addEventListener('click', () => {
                 window.location.href = 'main_menu.html';
             });
 
-            // 消除逻辑占位符
+            // 消除逻辑
             function checkAndEliminate() {
                 const counts = {};
                 numbers.forEach(item => {
-                    if (!item.eliminated) { // 只统计未消除的数字
+                    if (!item.eliminated) {
                         counts[item.value] = (counts[item.value] || 0) + 1;
                     }
                 });
 
                 const numbersToEliminate = Object.keys(counts).filter(num => counts[num] > 1).map(Number);
+                let eliminatedCount = 0;
 
                 if (numbersToEliminate.length > 0) {
-                    numbers.forEach(item => {
-                        if (numbersToEliminate.includes(item.value)) {
-                            item.eliminated = true; // 标记为已消除
+                    let hasNewElimination = false;
+                    numbers.forEach((item, index) => {
+                        if (numbersToEliminate.includes(item.value) && !item.eliminated) {
+                            item.eliminated = true;
+                            hasNewElimination = true;
+
+                            // Add animation
+                            const cell = gameGrid.children[index];
+                            if (cell) {
+                                cell.classList.add('eliminate-effect');
+                                // Update text content after animation starts
+                                setTimeout(() => {
+                                    cell.textContent = '✓';
+                                    cell.classList.add('eliminated');
+                                }, 300);
+                            }
                         }
                     });
-                    renderGrid();
-                    // 消除后再次检查，防止连锁消除 (如果还有可消除的，会继续标记)
-                    checkAndEliminate();
+
+                    if (hasNewElimination) {
+                        setTimeout(() => {
+                            renderGrid();
+                            checkAndEliminate(); // Recursive check
+                            checkWin();
+                        }, 600);
+                    }
+                } else {
+                    checkWin();
                 }
+            }
+
+            function checkWin() {
+                const allEliminated = numbers.every(n => n.eliminated);
+                if (allEliminated) {
+                    setTimeout(() => {
+                        successModal.classList.add('active');
+                        startConfetti();
+                    }, 500);
+                }
+            }
+
+            // Simple Confetti
+            function startConfetti() {
+                const canvas = document.getElementById('confetti-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                const particles = [];
+                const colors = ['#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#93c5fd'];
+
+                for (let i = 0; i < 100; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height - canvas.height,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        size: Math.random() * 10 + 5,
+                        speed: Math.random() * 5 + 2,
+                        angle: Math.random() * 6.28
+                    });
+                }
+
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    particles.forEach(p => {
+                        p.y += p.speed;
+                        p.x += Math.sin(p.angle) * 2;
+
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(p.x, p.y, p.size, p.size);
+
+                        if (p.y > canvas.height) {
+                            p.y = -20;
+                            p.x = Math.random() * canvas.width;
+                        }
+                    });
+
+                    requestAnimationFrame(animate);
+                }
+
+                animate();
             }
 
             initGame();
         });
     </script>
 </body>
+
 </html>
