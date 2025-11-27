@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字逼近游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Home View -->
+        <div id="view-home" class="view active">
+            <header>
+                <h1>数字逼近</h1>
+                <p>通过加减运算接近目标数字</p>
+            </header>
+            <div class="home-menu">
+                <button class="btn btn-submit btn-home" onclick="startGame()">开始游戏</button>
+                <button class="btn btn-op btn-home" style="width: auto; background: #95a5a6;"
+                    onclick="openSettings()">设置</button>
+            </div>
+        </div>
+
+        <!-- Game View -->
+        <div id="view-game" class="view">
+            <header>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <button class="btn-icon" onclick="goHome()" title="返回主页">🏠</button>
+                    <h1>数字逼近</h1>
+                    <div style="width: 40px;"></div> <!-- Spacer -->
+                </div>
+                <div class="target-display">
+                    目标数字: <span id="target-num" class="target-number">--</span>
+                </div>
+            </header>
+
+            <div id="card-pool" class="game-area">
+                <!-- Cards will be injected here -->
+            </div>
+
+            <div class="controls">
+                <button id="btn-add" class="btn btn-op" disabled>+</button>
+                <button id="btn-sub" class="btn btn-op" disabled>-</button>
+                <button id="btn-mul" class="btn btn-op" disabled>×</button>
+                <button id="btn-div" class="btn btn-op" disabled>÷</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button id="btn-decompose" class="btn" style="background: #e67e22; color: white; width: 100px;"
+                    disabled>分解</button>
+            </div>
+
+            <button id="btn-submit" class="btn btn-submit">提交计算分数</button>
+        </div>
+    </div>
+
+    <!-- Result Overlay -->
+    <div id="result-overlay" class="overlay">
+        <div class="modal-card">
+            <h2>游戏结束</h2>
+            <p>你的平均偏差分数是</p>
+            <div id="final-score" class="score">0</div>
+            <p id="score-detail" style="color: #666; font-size: 0.9rem;"></p>
+            <button id="btn-reset" class="btn btn-reset">再玩一次</button>
+            <button class="btn btn-close" onclick="goHome()">返回主页</button>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="overlay">
+        <div class="modal-card" style="text-align: left;">
+            <h2>游戏设置</h2>
+
+            <div class="settings-section">
+                <h3>运算符</h3>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" name="operator" value="+" checked> +</label>
+                    <label><input type="checkbox" name="operator" value="-" checked> -</label>
+                    <label><input type="checkbox" name="operator" value="*"> ×</label>
+                    <label><input type="checkbox" name="operator" value="/"> ÷</label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>目标数字范围</h3>
+                <div class="setting-row">
+                    <label>最小:</label>
+                    <input type="number" id="setting-min-target" value="10" style="width: 60px;">
+                </div>
+                <div class="setting-row">
+                    <label>最大:</label>
+                    <input type="number" id="setting-max-target" value="100" style="width: 60px;">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>初始数字范围</h3>
+                <div class="setting-row">
+                    <label>最小:</label>
+                    <input type="number" id="setting-min-pool" value="1" style="width: 60px;">
+                </div>
+                <div class="setting-row">
+                    <label>最大:</label>
+                    <input type="number" id="setting-max-pool" value="50" style="width: 60px;">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>数字类型</h3>
+                <select id="setting-type" style="width: 100%; padding: 5px;">
+                    <option value="integer">整数</option>
+                    <option value="decimal1">1位小数</option>
+                    <option value="decimal2">2位小数</option>
+                    <option value="mul10">整十数</option>
+                    <option value="mul100">整百数</option>
+                </select>
+            </div>
+
+            <div class="settings-section">
+                <h3>初始数量</h3>
+                <input type="number" id="setting-pool-size" value="5" min="2" max="10" style="width: 100%;">
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn btn-submit" onclick="closeSettings()">保存并关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
