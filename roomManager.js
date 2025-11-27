@@ -1,0 +1,307 @@
+// 房间管理系统（内存存储）
+
+class RoomManager {
+    constructor() {
+        this.rooms = new Map(); // roomId -> Room
+        this.players = new Map(); // playerId -> { roomId, playerName }
+    }
+
+    // 生成房间号（6位数字）
+    generateRoomId() {
+        let roomId;
+        do {
+            roomId = Math.floor(100000 + Math.random() * 900000).toString();
+        } while (this.rooms.has(roomId));
+        return roomId;
+    }
+
+    // 生成玩家ID
+    generatePlayerId() {
+        return `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // 创建房间
+    createRoom(hostName, settings) {
+        const roomId = this.generateRoomId();
+        const hostId = this.generatePlayerId();
+
+        const room = {
+            id: roomId,
+            hostId: hostId,
+            players: new Map(), // playerId -> { id, name, score, isReady, currentRound }
+            settings: {
+                ...settings,
+                questionCount: settings.questionCount || 1
+            },
+            status: 'waiting', // waiting, playing, finished
+            currentRound: 0,
+            gameData: null, // { target, pool } - 当前题目的数据
+            scores: [] // 每轮所有玩家的分数
+        };
+
+        room.players.set(hostId, {
+            id: hostId,
+            name: hostName,
+            score: null,
+            isReady: false,
+            currentRound: 0
+        });
+
+        this.rooms.set(roomId, room);
+        this.players.set(hostId, { roomId, playerName: hostName });
+
+        return { roomId, playerId: hostId, room };
+    }
+
+    // 加入房间
+    joinRoom(roomId, playerName) {
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            throw new Error('房间不存在');
+        }
+
+        if (room.status !== 'waiting') {
+            throw new Error('房间已开始游戏');
+        }
+
+        if (room.players.size >= 10) {
+            throw new Error('房间已满');
+        }
+
+        const playerId = this.generatePlayerId();
+        room.players.set(playerId, {
+            id: playerId,
+            name: playerName,
+            score: null,
+            isReady: false,
+            currentRound: 0
+        });
+
+        this.players.set(playerId, { roomId, playerName });
+
+        return { playerId, room };
+    }
+
+    // 离开房间
+    leaveRoom(playerId) {
+        const player = this.players.get(playerId);
+        if (!player) {
+            return null;
+        }
+
+        const room = this.rooms.get(player.roomId);
+        if (room) {
+            room.players.delete(playerId);
+            
+            // 如果房主离开，关闭房间
+            if (room.hostId === playerId) {
+                this.rooms.delete(player.roomId);
+            } else if (room.players.size === 0) {
+                // 如果房间为空，删除房间
+                this.rooms.delete(player.roomId);
+            }
+        }
+
+        this.players.delete(playerId);
+        return room;
+    }
+
+    // 获取房间信息
+    getRoom(roomId) {
+        return this.rooms.get(roomId);
+    }
+
+    // 更新玩家准备状态
+    setPlayerReady(roomId, playerId, isReady) {
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            throw new Error('房间不存在');
+        }
+
+        const player = room.players.get(playerId);
+        if (!player) {
+            throw new Error('玩家不在房间中');
+        }
+
+        player.isReady = isReady;
+        return room;
+    }
+
+    // 开始游戏（生成题目）
+    startGame(roomId, hostId) {
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            throw new Error('房间不存在');
+        }
+
+        if (room.hostId !== hostId) {
+            throw new Error('只有房主可以开始游戏');
+        }
+
+        if (room.status !== 'waiting') {
+            throw new Error('游戏已开始');
+        }
+
+        if (room.players.size < 2) {
+            throw new Error('至少需要2名玩家');
+        }
+
+        // 生成第一题
+        room.currentRound = 1;
+        room.status = 'playing';
+        room.gameData = this.generateGameData(room.settings);
+        
+        // 重置所有玩家状态
+        room.players.forEach(player => {
+            player.isReady = false;
+            player.currentRound = 1;
+            player.score = null;
+        });
+
+        return room;
+    }
+
+    // 生成游戏数据（目标数字和卡池）
+    generateGameData(settings) {
+        const generateNumber = (min, max, type) => {
+            let num = Math.random() * (max - min) + min;
+            switch (type) {
+                case 'integer': return Math.floor(num);
+                case 'decimal1': return Number(num.toFixed(1));
+                case 'decimal2': return Number(num.toFixed(2));
+                case 'mul10': return Math.floor(num / 10) * 10;
+                case 'mul100': return Math.floor(num / 100) * 100;
+                default: return Math.floor(num);
+            }
+        };
+
+        const target = generateNumber(
+            settings.targetRange.min,
+            settings.targetRange.max,
+            settings.numberType
+        );
+
+        const pool = Array.from({ length: settings.poolSize }, () => ({
+            value: generateNumber(
+                settings.poolRange.min,
+                settings.poolRange.max,
+                settings.numberType
+            )
+        }));
+
+        return { target, pool };
+    }
+
+    // 提交分数
+    submitScore(roomId, playerId, score, pool) {
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            throw new Error('房间不存在');
+        }
+
+        const player = room.players.get(playerId);
+        if (!player) {
+            throw new Error('玩家不在房间中');
+        }
+
+        player.score = score;
+        player.isReady = true; // 提交分数后标记为准备下一轮
+
+        // 检查是否所有玩家都提交了分数
+        const allReady = Array.from(room.players.values()).every(p => p.isReady);
+
+        if (allReady) {
+            // 保存当前轮次分数
+            const roundScores = Array.from(room.players.values()).map(p => ({
+                playerId: p.id,
+                playerName: p.name,
+                score: p.score
+            }));
+
+            room.scores.push({
+                round: room.currentRound,
+                scores: roundScores
+            });
+
+            // 检查是否还有下一轮
+            if (room.currentRound < room.settings.questionCount) {
+                // 生成下一题
+                room.currentRound++;
+                room.gameData = this.generateGameData(room.settings);
+                
+                // 重置玩家准备状态
+                room.players.forEach(p => {
+                    p.isReady = false;
+                    p.score = null;
+                });
+            } else {
+                // 游戏结束
+                room.status = 'finished';
+            }
+        }
+
+        return room;
+    }
+
+    // 获取房间排行榜
+    getRoomLeaderboard(roomId) {
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            throw new Error('房间不存在');
+        }
+
+        // 计算每个玩家的总分数（所有轮次的平均分）
+        const playerTotals = new Map();
+
+        room.scores.forEach(round => {
+            round.scores.forEach(({ playerId, playerName, score }) => {
+                if (!playerTotals.has(playerId)) {
+                    playerTotals.set(playerId, {
+                        playerId,
+                        playerName,
+                        scores: [],
+                        totalScore: 0,
+                        avgScore: 0
+                    });
+                }
+                const player = playerTotals.get(playerId);
+                player.scores.push(score);
+                player.totalScore += parseFloat(score);
+            });
+        });
+
+        // 计算平均分
+        playerTotals.forEach(player => {
+            player.avgScore = player.scores.length > 0 
+                ? (player.totalScore / player.scores.length).toFixed(2)
+                : '0.00';
+        });
+
+        // 转换为数组并排序
+        const leaderboard = Array.from(playerTotals.values())
+            .sort((a, b) => parseFloat(a.avgScore) - parseFloat(b.avgScore));
+
+        return leaderboard;
+    }
+
+    // 清理过期房间（可选，定期清理）
+    cleanup() {
+        const now = Date.now();
+        const maxAge = 2 * 60 * 60 * 1000; // 2小时
+
+        for (const [roomId, room] of this.rooms.entries()) {
+            // 这里可以添加时间戳来跟踪房间创建时间
+            // 暂时只清理已完成的房间
+            if (room.status === 'finished') {
+                // 可以设置一个完成时间，超过一定时间后删除
+                // 暂时保留，让玩家可以查看最终结果
+            }
+        }
+    }
+}
+
+// 单例模式
+const roomManager = new RoomManager();
+
+module.exports = roomManager;
+

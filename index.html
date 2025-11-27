@@ -18,7 +18,9 @@
                 <p>通过加减运算接近目标数字</p>
             </header>
             <div class="home-menu">
-                <button class="btn btn-submit btn-home" onclick="startGame()">开始游戏</button>
+                <button class="btn btn-submit btn-home" onclick="startGame()">单人游戏</button>
+                <button class="btn btn-op btn-home" style="width: auto; background: #9b59b6;"
+                    onclick="openRoomMenu()">对战房间</button>
                 <button class="btn btn-op btn-home" style="width: auto; background: #95a5a6;"
                     onclick="openSettings()">设置</button>
             </div>
@@ -34,6 +36,10 @@
                 </div>
                 <div class="target-display">
                     目标数字: <span id="target-num" class="target-number">--</span>
+                </div>
+                <div id="room-info" style="display: none; margin-top: 10px; font-size: 0.9rem;">
+                    <span>房间号: <strong id="room-id-display">--</strong></span>
+                    <span style="margin-left: 20px;">第 <span id="current-round">1</span> / <span id="total-rounds">1</span> 题</span>
                 </div>
             </header>
 
@@ -54,6 +60,14 @@
             </div>
 
             <button id="btn-submit" class="btn btn-submit">提交计算分数</button>
+            
+            <!-- 房间排行榜 -->
+            <div id="room-leaderboard" style="display: none; margin-top: 30px;">
+                <h3 style="margin-bottom: 15px;">房间排行榜</h3>
+                <div id="room-leaderboard-content" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <p style="text-align: center; color: #666;">加载中...</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -66,6 +80,77 @@
             <p id="score-detail" style="color: #666; font-size: 0.9rem;"></p>
             <button id="btn-reset" class="btn btn-reset">再玩一次</button>
             <button class="btn btn-close" onclick="goHome()">返回主页</button>
+        </div>
+    </div>
+
+    <!-- Room Menu Overlay -->
+    <div id="room-menu-overlay" class="overlay">
+        <div class="modal-card">
+            <h2>对战房间</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button class="btn btn-submit" onclick="openCreateRoom()">创建房间</button>
+                <button class="btn" style="background: #3498db; color: white;" onclick="openJoinRoom()">加入房间</button>
+                <button class="btn btn-close" onclick="closeRoomMenu()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Room Overlay -->
+    <div id="create-room-overlay" class="overlay">
+        <div class="modal-card" style="text-align: left; max-width: 500px;">
+            <h2>创建房间</h2>
+            <div class="settings-section">
+                <h3>玩家名称</h3>
+                <input type="text" id="create-room-player-name" placeholder="输入你的名字" 
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                    value="">
+            </div>
+            <div class="settings-section">
+                <h3>题目数量</h3>
+                <input type="number" id="create-room-question-count" value="1" min="1" max="10" 
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-submit" onclick="createRoom()">创建</button>
+                <button class="btn btn-close" onclick="closeCreateRoom()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Overlay -->
+    <div id="join-room-overlay" class="overlay">
+        <div class="modal-card" style="max-width: 400px;">
+            <h2>加入房间</h2>
+            <div class="settings-section" style="margin-top: 20px;">
+                <h3>玩家名称</h3>
+                <input type="text" id="join-room-player-name" placeholder="输入你的名字" 
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                    value="">
+            </div>
+            <div class="settings-section">
+                <h3>房间号</h3>
+                <input type="text" id="join-room-id" placeholder="输入6位房间号" 
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 1.2rem; text-align: center; letter-spacing: 0.2em;"
+                    maxlength="6">
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-submit" onclick="joinRoom()">加入</button>
+                <button class="btn btn-close" onclick="closeJoinRoom()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Settings Overlay -->
+    <div id="room-settings-overlay" class="overlay">
+        <div class="modal-card" style="text-align: left; max-width: 500px;">
+            <h2>房间设置</h2>
+            <div id="room-settings-content">
+                <!-- 设置内容将由 JavaScript 动态生成 -->
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="btn-start-game" class="btn btn-submit" style="display: none;" onclick="startRoomGame()">开始游戏</button>
+                <button class="btn btn-close" onclick="closeRoomSettings()">关闭</button>
+            </div>
         </div>
     </div>
 
@@ -122,6 +207,12 @@
             <div class="settings-section">
                 <h3>初始数量</h3>
                 <input type="number" id="setting-pool-size" value="5" min="2" max="10" style="width: 100%;">
+            </div>
+
+            <div class="settings-section">
+                <h3>玩家名称</h3>
+                <input type="text" id="setting-player-name" placeholder="输入你的名字" 
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
 
             <div style="text-align: center;">
