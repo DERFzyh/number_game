@@ -15,6 +15,8 @@ const state = {
         numberType: 'integer', // integer, decimal1, decimal2, mul10, mul100
         poolSize: 5
     },
+    savedPresets: JSON.parse(localStorage.getItem('gameSettingsPresets')) || {}, // 新增：保存的个性化设置预设
+    activePreset: localStorage.getItem('activeSettingsPreset') || null, // 新增：当前激活的预设名称
     isAnimating: false,
     // 房间相关状态
     room: {
@@ -48,6 +50,7 @@ const els = {
     finalScore: document.getElementById('final-score'),
     scoreDetail: document.getElementById('score-detail'),
     movesCount: document.getElementById('moves-count'),
+    currentScore: document.getElementById('current-score'), // 新增：当前分数显示元素
     roomInfo: document.getElementById('room-info'),
     roomIdDisplay: document.getElementById('room-id-display'),
     currentRound: document.getElementById('current-round'),
@@ -97,6 +100,7 @@ function startGame() {
 
 function openSettings() {
     renderSettings();
+    populateSettingsPresets(); // 新增：填充预设下拉菜单
     // 更新玩家名称输入框
     const playerNameInput = document.getElementById('setting-player-name');
     if (playerNameInput) {
@@ -106,7 +110,8 @@ function openSettings() {
 }
 
 function closeSettings() {
-    saveSettings();
+    saveSettings(); // 保存当前设置到 state.settings
+    saveAllSettings(); // 新增：保存所有设置和预设到 localStorage
     els.settingsOverlay.classList.remove('visible');
 }
 
@@ -122,6 +127,12 @@ function renderSettings() {
     document.querySelectorAll('input[name="operator"]').forEach(cb => {
         cb.checked = state.settings.operators.includes(cb.value);
     });
+
+    // 更新预设名称输入框，如果当前有激活预设，则显示其名称
+    const presetNameInput = document.getElementById('setting-preset-name');
+    if (presetNameInput) {
+        presetNameInput.value = state.activePreset || '';
+    }
 }
 
 function saveSettings() {
@@ -144,6 +155,133 @@ function saveSettings() {
     if (playerNameInput) {
         state.playerName = playerNameInput.value.trim() || '匿名玩家';
         localStorage.setItem('playerName', state.playerName);
+    }
+}
+
+// 新增：加载所有设置和预设
+function loadAllSettings() {
+    const savedSettings = JSON.parse(localStorage.getItem('gameSettings'));
+    if (savedSettings) {
+        state.settings = { ...state.settings, ...savedSettings };
+    }
+    state.savedPresets = JSON.parse(localStorage.getItem('gameSettingsPresets')) || {};
+    state.activePreset = localStorage.getItem('activeSettingsPreset') || null;
+
+    // 应用当前激活的预设（如果存在）
+    if (state.activePreset && state.savedPresets[state.activePreset]) {
+        applySettings(state.savedPresets[state.activePreset]);
+    }
+}
+
+// 新增：保存所有设置和预设
+function saveAllSettings() {
+    localStorage.setItem('gameSettings', JSON.stringify(state.settings));
+    localStorage.setItem('gameSettingsPresets', JSON.stringify(state.savedPresets));
+    localStorage.setItem('activeSettingsPreset', state.activePreset);
+}
+
+// 新增：填充设置预设下拉菜单
+function populateSettingsPresets() {
+    const select = document.getElementById('setting-presets-select');
+    select.innerHTML = '<option value="">选择或保存新预设</option>'; // 清空并添加默认选项
+    for (const name in state.savedPresets) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        if (name === state.activePreset) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    }
+}
+
+// 新增：保存当前设置为预设
+function saveCurrentSettingsAsPreset() {
+    const presetNameInput = document.getElementById('setting-preset-name');
+    const name = presetNameInput.value.trim();
+    if (!name) {
+        alert('请输入预设名称！');
+        return;
+    }
+
+    // 克隆当前设置，避免引用问题
+    state.savedPresets[name] = JSON.parse(JSON.stringify(state.settings));
+    state.activePreset = name;
+    saveAllSettings();
+    populateSettingsPresets();
+    presetNameInput.value = ''; // 清空输入框
+    alert(`设置预设“${name}”已保存！`);
+}
+
+// 新增：加载选定预设
+function loadSettingsPreset() {
+    const select = document.getElementById('setting-presets-select');
+    const name = select.value;
+    if (!name) {
+        alert('请选择一个预设！');
+        return;
+    }
+
+    const preset = state.savedPresets[name];
+    if (preset) {
+        applySettings(preset);
+        state.activePreset = name;
+        saveAllSettings(); // 保存当前激活的预设
+        renderSettings(); // 重新渲染设置UI
+        alert(`设置预设“${name}”已加载！`);
+    } else {
+        alert('未找到该预设！');
+    }
+}
+
+// 新增：删除选定预设
+function deleteSettingsPreset() {
+    const select = document.getElementById('setting-presets-select');
+    const name = select.value;
+    if (!name) {
+        alert('请选择一个要删除的预设！');
+        return;
+    }
+
+    if (confirm(`确定要删除预设“${name}”吗？`)) {
+        delete state.savedPresets[name];
+        if (state.activePreset === name) {
+            state.activePreset = null; // 如果删除的是当前激活的预设，则清除激活状态
+        }
+        saveAllSettings();
+        populateSettingsPresets();
+        renderSettings(); // 重新渲染设置UI
+        alert(`设置预设“${name}”已删除！`);
+    }
+}
+
+// 新增：应用设置到UI和state
+function applySettings(settings) {
+    // 深度合并设置，确保子对象也被正确更新
+    state.settings = {
+        ...state.settings,
+        ...settings,
+        targetRange: { ...state.settings.targetRange, ...settings.targetRange },
+        poolRange: { ...state.settings.poolRange, ...settings.poolRange },
+        operators: [...settings.operators]
+    };
+
+    // 更新UI
+    document.getElementById('setting-min-target').value = settings.targetRange.min;
+    document.getElementById('setting-max-target').value = settings.targetRange.max;
+    document.getElementById('setting-min-pool').value = settings.poolRange.min;
+    document.getElementById('setting-max-pool').value = settings.poolRange.max;
+    document.getElementById('setting-pool-size').value = settings.poolSize;
+    document.getElementById('setting-type').value = settings.numberType;
+
+    document.querySelectorAll('input[name="operator"]').forEach(cb => {
+        cb.checked = settings.operators.includes(cb.value);
+    });
+
+    // 更新玩家名称输入框
+    const playerNameInput = document.getElementById('setting-player-name');
+    if (playerNameInput && settings.playerName) {
+        playerNameInput.value = settings.playerName;
     }
 }
 
@@ -175,6 +313,7 @@ function initGame() {
     state.movesCount = 0; // 重置操作次数
 
     render();
+    updateCurrentScoreDisplay(); // 新增：初始化当前分数显示
     els.resultOverlay.classList.remove('visible');
 }
 
@@ -204,6 +343,7 @@ function render() {
     }
 
     updateControls();
+    updateCurrentScoreDisplay(); // 新增：每次渲染后更新分数
 }
 
 function updateControls() {
@@ -321,6 +461,7 @@ async function performOperation(op) {
     state.isAnimating = false;
     state.movesCount++; // 增加操作次数
     render();
+    updateCurrentScoreDisplay(); // 新增：操作后更新分数
 
     // Animation for new card
     setTimeout(() => {
@@ -362,6 +503,7 @@ async function decompose() {
     state.isAnimating = false;
     state.movesCount++; // 增加操作次数（分解也算一次操作）
     render();
+    updateCurrentScoreDisplay(); // 新增：分解后更新分数
 
     // Animate new cards appearing
     setTimeout(() => {
@@ -383,7 +525,12 @@ function calculateScore() {
     });
 
     const score = totalDiff / state.pool.length;
-    return score.toFixed(2);
+    return Number(score.toFixed(2)); // 返回浮点数
+}
+
+// 新增：更新当前分数显示
+function updateCurrentScoreDisplay() {
+    els.currentScore.textContent = calculateScore().toFixed(2); // 显示两位小数
 }
 
 async function showResult() {
@@ -827,6 +974,7 @@ async function updateRoomLeaderboard() {
                     <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
                         <th style="padding: 8px; text-align: left;">排名</th>
                         <th style="padding: 8px; text-align: left;">玩家</th>
+                        <th style="padding: 8px; text-align: right;">进度</th>
                         <th style="padding: 8px; text-align: right;">平均分</th>
                     </tr>
                 </thead>
@@ -837,6 +985,9 @@ async function updateRoomLeaderboard() {
                                 ${index + 1}
                             </td>
                             <td style="padding: 8px;">${escapeHtml(player.playerName)}</td>
+                            <td style="padding: 8px; text-align: right;">
+                                ${player.questionsCompleted || 0}/${player.totalQuestions || 0}
+                            </td>
                             <td style="padding: 8px; text-align: right; font-weight: bold; color: #4a90e2;">
                                 ${player.avgScore}
                             </td>
@@ -870,5 +1021,21 @@ document.getElementById('btn-reset').onclick = () => {
     initGame();
 };
 
+// 绑定新的事件监听器
+document.getElementById('setting-presets-select').onchange = () => {
+    const selectedPreset = document.getElementById('setting-presets-select').value;
+    if (selectedPreset) {
+        document.getElementById('setting-preset-name').value = selectedPreset; // 将选择的预设名称填充到输入框
+    } else {
+        document.getElementById('setting-preset-name').value = '';
+    }
+};
+document.getElementById('settings-overlay').querySelector('.btn-submit').onclick = () => closeSettings();
+document.getElementById('settings-overlay').querySelector('button[onclick="saveCurrentSettingsAsPreset()"]').onclick = saveCurrentSettingsAsPreset;
+document.getElementById('settings-overlay').querySelector('button[onclick="loadSettingsPreset()"]').onclick = loadSettingsPreset;
+document.getElementById('settings-overlay').querySelector('button[onclick="deleteSettingsPreset()"]').onclick = deleteSettingsPreset;
+
+
 // Init
+loadAllSettings(); // 在goHome()之前加载所有设置
 goHome();

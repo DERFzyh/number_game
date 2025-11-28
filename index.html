@@ -37,6 +37,9 @@
                 <div class="target-display">
                     目标数字: <span id="target-num" class="target-number">--</span>
                 </div>
+                <div class="current-score-display" style="margin-top: 10px; font-size: 1.1rem; font-weight: bold;">
+                    当前分数: <span id="current-score" class="score">0.00</span>
+                </div>
                 <div id="room-info" style="display: none; margin-top: 10px; font-size: 0.9rem;">
                     <span>房间号: <strong id="room-id-display">--</strong></span>
                     <span style="margin-left: 20px;">第 <span id="current-round">1</span> / <span
@@ -67,7 +70,36 @@
                 <h3 style="margin-bottom: 15px;">房间排行榜</h3>
                 <div id="room-leaderboard-content"
                     style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <p style="text-align: center; color: #666;">加载中...</p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                                <th style="padding: 8px; text-align: left;">排名</th>
+                                <th style="padding: 8px; text-align: left;">玩家</th>
+                                <th style="padding: 8px; text-align: right;">进度</th> <!-- 新增：进度列 -->
+                                <th style="padding: 8px; text-align: right;">平均分</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>玩家A</td>
+                                <td style="text-align: right;">100%</td>
+                                <td style="text-align: right;">95.00</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>玩家B</td>
+                                <td style="text-align: right;">90%</td>
+                                <td style="text-align: right;">90.00</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>玩家C</td>
+                                <td style="text-align: right;">85%</td>
+                                <td style="text-align: right;">85.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -267,6 +299,25 @@
             <div class="settings-section">
                 <h3>玩家名称</h3>
                 <input type="text" id="setting-player-name" placeholder="输入你的名字"
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <hr style="margin: 20px 0; border-color: #eee;">
+
+            <div class="settings-section">
+                <h3>个性化设置预设</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <select id="setting-presets-select"
+                        style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">选择或保存新预设</option>
+                    </select>
+                    <button class="btn" style="background: #2ecc71; color: white;"
+                        onclick="saveCurrentSettingsAsPreset()">保存</button>
+                    <button class="btn" style="background: #3498db; color: white;"
+                        onclick="loadSettingsPreset()">加载</button>
+                    <button class="btn" style="background: #e74c3c; color: white;"
+                        onclick="deleteSettingsPreset()">删除</button>
+                </div>
+                <input type="text" id="setting-preset-name" placeholder="输入预设名称以保存"
                     style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
 
