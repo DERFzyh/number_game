@@ -69,13 +69,13 @@ function goHome() {
             clearInterval(state.roomPollInterval);
             state.roomPollInterval = null;
         }
-        
+
         fetch(`${API_BASE_URL}/api/rooms/${state.room.roomId}/leave`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ playerId: state.room.playerId })
         }).catch(err => console.error('离开房间失败:', err));
-        
+
         state.room = {
             roomId: null,
             playerId: null,
@@ -85,7 +85,7 @@ function goHome() {
             totalRounds: 1
         };
     }
-    
+
     showView('home');
     updateRoomUI();
 }
@@ -138,7 +138,7 @@ function saveSettings() {
     });
     if (ops.length === 0) ops.push('+');
     state.settings.operators = ops;
-    
+
     // 保存玩家名称
     const playerNameInput = document.getElementById('setting-player-name');
     if (playerNameInput) {
@@ -391,7 +391,7 @@ async function showResult() {
     els.finalScore.textContent = score;
     els.scoreDetail.textContent = `(所有数字与 ${state.target} 的差值绝对值之和) / ${state.pool.length}`;
     els.resultOverlay.classList.add('visible');
-    
+
     // 如果是房间游戏，提交分数到房间
     if (state.room.roomId) {
         try {
@@ -457,11 +457,11 @@ async function saveGameRecord(record) {
         },
         body: JSON.stringify(record)
     });
-    
+
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.json();
 }
 
@@ -479,6 +479,19 @@ function openCreateRoom() {
     closeRoomMenu();
     const playerNameInput = document.getElementById('create-room-player-name');
     playerNameInput.value = state.playerName;
+
+    // Populate create room settings with current global settings
+    document.getElementById('cr-min-target').value = state.settings.targetRange.min;
+    document.getElementById('cr-max-target').value = state.settings.targetRange.max;
+    document.getElementById('cr-min-pool').value = state.settings.poolRange.min;
+    document.getElementById('cr-max-pool').value = state.settings.poolRange.max;
+    document.getElementById('cr-pool-size').value = state.settings.poolSize;
+    document.getElementById('cr-type').value = state.settings.numberType;
+
+    document.querySelectorAll('input[name="cr-operator"]').forEach(cb => {
+        cb.checked = state.settings.operators.includes(cb.value);
+    });
+
     document.getElementById('create-room-overlay').classList.add('visible');
 }
 
@@ -501,16 +514,33 @@ async function createRoom() {
     const playerName = document.getElementById('create-room-player-name').value.trim() || '匿名玩家';
     const questionCount = parseInt(document.getElementById('create-room-question-count').value) || 1;
 
+    // Gather settings from create room modal
+    const operators = [];
+    document.querySelectorAll('input[name="cr-operator"]:checked').forEach(cb => operators.push(cb.value));
+    if (operators.length === 0) operators.push('+');
+
+    const settings = {
+        operators: operators,
+        targetRange: {
+            min: Number(document.getElementById('cr-min-target').value),
+            max: Number(document.getElementById('cr-max-target').value)
+        },
+        poolRange: {
+            min: Number(document.getElementById('cr-min-pool').value),
+            max: Number(document.getElementById('cr-max-pool').value)
+        },
+        numberType: document.getElementById('cr-type').value,
+        poolSize: Number(document.getElementById('cr-pool-size').value),
+        questionCount: questionCount
+    };
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/rooms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 playerName,
-                settings: {
-                    ...state.settings,
-                    questionCount
-                }
+                settings
             })
         });
 
@@ -583,7 +613,7 @@ async function updateRoomSettings() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/rooms/${state.room.roomId}`);
         const data = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(data.error || '获取房间信息失败');
         }
@@ -714,17 +744,17 @@ function startRoomPolling() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/rooms/${state.room.roomId}`);
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error);
             }
 
             const room = data.data;
-            
+
             // 如果游戏开始，同步游戏数据
-            if (room.status === 'playing' && room.gameData && 
+            if (room.status === 'playing' && room.gameData &&
                 (state.room.status !== 'playing' || state.room.currentRound !== room.currentRound)) {
-                
+
                 state.target = room.gameData.target;
                 state.pool = room.gameData.pool.map((card, i) => ({
                     id: `room-${Date.now()}-${i}`,
@@ -734,7 +764,7 @@ function startRoomPolling() {
                 state.selectedIndices = [];
                 state.movesCount = 0;
                 state.room.currentRound = room.currentRound;
-                
+
                 if (views.game.classList.contains('active')) {
                     render();
                 } else {
@@ -745,13 +775,13 @@ function startRoomPolling() {
 
             state.room.status = room.status;
             state.room.currentRound = room.currentRound || 0;
-            
+
             // 如果房间设置界面打开，更新它
             const roomSettingsOverlay = document.getElementById('room-settings-overlay');
             if (roomSettingsOverlay && roomSettingsOverlay.classList.contains('visible')) {
                 updateRoomSettings();
             }
-            
+
             updateRoomUI();
             updateRoomLeaderboard();
         } catch (error) {
@@ -779,13 +809,13 @@ async function updateRoomLeaderboard() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/rooms/${state.room.roomId}/leaderboard`);
         const data = await response.json();
-        
+
         if (!response.ok) {
             return;
         }
 
         const leaderboard = data.data || [];
-        
+
         if (leaderboard.length === 0) {
             els.roomLeaderboardContent.innerHTML = '<p style="text-align: center; color: #666;">暂无排名</p>';
             return;
@@ -815,7 +845,7 @@ async function updateRoomLeaderboard() {
                 </tbody>
             </table>
         `;
-        
+
         els.roomLeaderboardContent.innerHTML = html;
     } catch (error) {
         console.error('更新房间排行榜失败:', error);

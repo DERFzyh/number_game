@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# System
+.DS_Store
+
+# Database
+*.db
+game.db
+
+# Environment variables
+.env
