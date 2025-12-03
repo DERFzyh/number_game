@@ -331,7 +331,8 @@ function parseCustomNumbers(numberString) {
     if (!numberString) {
         return [];
     }
-    return numberString.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+    // 支持中文逗号和英文逗号分隔
+    return numberString.split(/[,，]/).map(s => Number(s.trim())).filter(n => !isNaN(n));
 }
 
 // 辅助函数：检查数字是否符合类型
@@ -350,33 +351,40 @@ function isNumberOfType(num, type) {
 function precalculateAvailableNumbers(min, max, type, customNumbers) {
     const uniqueNumbers = new Set();
 
-    // 1. 添加自定义数字（去重）
+    // 1. 添加自定义数字：只需要检查是否是有效数字，范围和类型在生成时再筛选
     customNumbers.forEach(num => {
-        // 检查数字范围和类型
-        if (num >= min && num <= max && isNumberOfType(num, type)) {
+        if (!isNaN(num)) { // 确保是有效数字
             uniqueNumbers.add(num);
         }
     });
 
-    // 2. 添加符合范围和类型的所有数字（去重，不与自定义数字重复）
-    // 为了效率，这里只考虑整数类型下的范围遍历。对于小数和整十数/整百数，
-    // 实际游戏中的生成是随机的，如果需要“所有”符合条件的数字，需要更复杂的遍历或生成策略。
-    // 目前，我们简化为只在整数类型下进行范围遍历，其他类型仍然依赖于随机生成和条件检查。
+    // 2. 添加符合范围和类型的所有数字
+    // 这里生成符合范围和类型的基础数字，不与自定义数字进行重复检查，Set会自动去重
     if (type === 'integer') {
-        for (let i = min; i <= max; i++) {
-            if (Number.isInteger(i)) {
-                uniqueNumbers.add(i);
-            }
+        for (let i = Math.floor(min); i <= Math.ceil(max); i++) { // 遍历整数范围
+            uniqueNumbers.add(i);
         }
-    } else { // 对于非整数类型，我们将生成一小部分随机数来增加池的多样性
-        for (let i = 0; i < 100; i++) { // 生成100个随机数尝试填充
+    } else if (type.startsWith('decimal')) {
+        // 对于小数类型，我们生成一定数量的随机小数来填充，因为遍历小数范围不实际
+        const precision = type === 'decimal1' ? 1 : 2;
+        for (let i = 0; i < 200; i++) { // 尝试生成200个小数
             let num = Math.random() * (max - min) + min;
-            if (isNumberOfType(num, type) && num >= min && num <= max) {
+            num = Number(num.toFixed(precision));
+            if (num >= min && num <= max) {
                 uniqueNumbers.add(num);
             }
         }
+    } else if (type === 'mul10') {
+        for (let i = Math.ceil(min / 10) * 10; i <= Math.floor(max / 10) * 10; i += 10) {
+            uniqueNumbers.add(i);
+        }
+    } else if (type === 'mul100') {
+        for (let i = Math.ceil(min / 100) * 100; i <= Math.floor(max / 100) * 100; i += 100) {
+            uniqueNumbers.add(i);
+        }
     }
 
+    // 移除最后的筛选和空列表生成逻辑
     return Array.from(uniqueNumbers);
 }
 
@@ -398,11 +406,15 @@ function initGame() {
     const s = state.settings;
 
     // 从预计算的数组中随机选择目标数字和卡池数字
-    state.target = state.availableTargetNumbers[Math.floor(Math.random() * state.availableTargetNumbers.length)];
+    state.target = state.availableTargetNumbers.length > 0 
+        ? state.availableTargetNumbers[Math.floor(Math.random() * state.availableTargetNumbers.length)]
+        : generateNumber(s.targetRange.min, s.targetRange.max, s.targetNumberType); // 如果预计算数组为空，回退到随机生成
 
     state.pool = Array.from({ length: s.poolSize }, (_, i) => ({
         id: `init-${Date.now()}-${i}`,
-        value: state.availablePoolNumbers[Math.floor(Math.random() * state.availablePoolNumbers.length)],
+        value: state.availablePoolNumbers.length > 0
+            ? state.availablePoolNumbers[Math.floor(Math.random() * state.availablePoolNumbers.length)]
+            : generateNumber(s.poolRange.min, s.poolRange.max, s.poolNumberType), // 如果预计算数组为空，回退到随机生成
         history: null
     }));
 

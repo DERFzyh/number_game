@@ -69,7 +69,8 @@ class RoomManager {
         if (!numberString) {
             return [];
         }
-        return numberString.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+        // 支持中文逗号和英文逗号分隔
+        return numberString.split(/[,，]/).map(s => Number(s.trim())).filter(n => !isNaN(n));
     }
 
     // 辅助函数：检查数字是否符合类型
@@ -88,30 +89,40 @@ class RoomManager {
     precalculateAvailableNumbers(min, max, type, customNumbers) {
         const uniqueNumbers = new Set();
 
-        // 1. 添加自定义数字（去重）
+        // 1. 添加自定义数字：只需要检查是否是有效数字，范围和类型在生成时再筛选
         customNumbers.forEach(num => {
-            // 检查数字范围和类型
-            if (num >= min && num <= max && this.isNumberOfType(num, type)) {
+            if (!isNaN(num)) { // 确保是有效数字
                 uniqueNumbers.add(num);
             }
         });
 
-        // 2. 添加符合范围和类型的所有数字（去重，不与自定义数字重复）
+        // 2. 添加符合范围和类型的所有数字
+        // 这里生成符合范围和类型的基础数字，不与自定义数字进行重复检查，Set会自动去重
         if (type === 'integer') {
-            for (let i = min; i <= max; i++) {
-                if (Number.isInteger(i)) {
-                    uniqueNumbers.add(i);
-                }
+            for (let i = Math.floor(min); i <= Math.ceil(max); i++) { // 遍历整数范围
+                uniqueNumbers.add(i);
             }
-        } else { // 对于非整数类型，我们将生成一小部分随机数来增加池的多样性
-            for (let i = 0; i < 100; i++) { // 生成100个随机数尝试填充
+        } else if (type.startsWith('decimal')) {
+            // 对于小数类型，我们生成一定数量的随机小数来填充，因为遍历小数范围不实际
+            const precision = type === 'decimal1' ? 1 : 2;
+            for (let i = 0; i < 200; i++) { // 尝试生成200个小数
                 let num = Math.random() * (max - min) + min;
-                if (this.isNumberOfType(num, type) && num >= min && num <= max) {
+                num = Number(num.toFixed(precision));
+                if (num >= min && num <= max) {
                     uniqueNumbers.add(num);
                 }
             }
+        } else if (type === 'mul10') {
+            for (let i = Math.ceil(min / 10) * 10; i <= Math.floor(max / 10) * 10; i += 10) {
+                uniqueNumbers.add(i);
+            }
+        } else if (type === 'mul100') {
+            for (let i = Math.ceil(min / 100) * 100; i <= Math.floor(max / 100) * 100; i += 100) {
+                uniqueNumbers.add(i);
+            }
         }
 
+        // 移除最后的筛选和空列表生成逻辑
         return Array.from(uniqueNumbers);
     }
 
@@ -239,10 +250,14 @@ class RoomManager {
         };
 
         // 从预计算的数组中随机选择目标数字和卡池数字
-        const target = settings.availableTargetNumbers[Math.floor(Math.random() * settings.availableTargetNumbers.length)];
+        const target = settings.availableTargetNumbers.length > 0
+            ? settings.availableTargetNumbers[Math.floor(Math.random() * settings.availableTargetNumbers.length)]
+            : generateNumber(settings.targetRange.min, settings.targetRange.max, settings.targetNumberType); // 如果预计算数组为空，回退到随机生成
 
         const pool = Array.from({ length: settings.poolSize }, () => ({
-            value: settings.availablePoolNumbers[Math.floor(Math.random() * settings.availablePoolNumbers.length)]
+            value: settings.availablePoolNumbers.length > 0
+                ? settings.availablePoolNumbers[Math.floor(Math.random() * settings.availablePoolNumbers.length)]
+                : generateNumber(settings.poolRange.min, settings.poolRange.max, settings.poolNumberType) // 如果预计算数组为空，回退到随机生成
         }));
 
         return { target, pool };
