@@ -31,13 +31,24 @@ class RoomManager {
             players: new Map(), // playerId -> { id, name, score, isReady, currentRound }
             settings: {
                 ...settings,
-                questionCount: settings.questionCount || 1
+                targetNumberType: settings.targetNumberType || 'integer', // 新增：目标数字类型
+                poolNumberType: settings.poolNumberType || 'integer',     // 新增：卡池数字类型
+                questionCount: settings.questionCount || 1,
+                testMode: settings.testMode || false // 新增：测试模式开关
             },
             status: 'waiting', // waiting, playing, finished
             currentRound: 0,
             gameData: null, // { target, pool } - 当前题目的数据
-            scores: [] // 每轮所有玩家的分数
+            scores: [], // 每轮所有玩家的分数
+            availableTargetNumbers: [], // 新增：预计算的目标数字数组
+            availablePoolNumbers: []    // 新增：预计算的卡池数字数组
         };
+
+        // 在创建房间后立即预计算可用数字列表
+        const targetCustomNums = this.parseCustomNumbers(room.settings.customTargetNumbers);
+        const poolCustomNums = this.parseCustomNumbers(room.settings.customPoolNumbers);
+        room.availableTargetNumbers = this.precalculateAvailableNumbers(room.settings.targetRange.min, room.settings.targetRange.max, room.settings.targetNumberType, targetCustomNums);
+        room.availablePoolNumbers = this.precalculateAvailableNumbers(room.settings.poolRange.min, room.settings.poolRange.max, room.settings.poolNumberType, poolCustomNums);
 
         room.players.set(hostId, {
             id: hostId,
@@ -51,6 +62,57 @@ class RoomManager {
         this.players.set(hostId, { roomId, playerName: hostName });
 
         return { roomId, playerId: hostId, room };
+    }
+
+    // 辅助函数：解析自定义数字字符串
+    parseCustomNumbers(numberString) {
+        if (!numberString) {
+            return [];
+        }
+        return numberString.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+    }
+
+    // 辅助函数：检查数字是否符合类型
+    isNumberOfType(num, type) {
+        switch (type) {
+            case 'integer': return Number.isInteger(num);
+            case 'decimal1': return (num * 10) % 1 === 0;
+            case 'decimal2': return (num * 100) % 1 === 0;
+            case 'mul10': return num % 10 === 0;
+            case 'mul100': return num % 100 === 0;
+            default: return Number.isInteger(num);
+        }
+    }
+
+    // 辅助函数：预计算可用数字列表
+    precalculateAvailableNumbers(min, max, type, customNumbers) {
+        const uniqueNumbers = new Set();
+
+        // 1. 添加自定义数字（去重）
+        customNumbers.forEach(num => {
+            // 检查数字范围和类型
+            if (num >= min && num <= max && this.isNumberOfType(num, type)) {
+                uniqueNumbers.add(num);
+            }
+        });
+
+        // 2. 添加符合范围和类型的所有数字（去重，不与自定义数字重复）
+        if (type === 'integer') {
+            for (let i = min; i <= max; i++) {
+                if (Number.isInteger(i)) {
+                    uniqueNumbers.add(i);
+                }
+            }
+        } else { // 对于非整数类型，我们将生成一小部分随机数来增加池的多样性
+            for (let i = 0; i < 100; i++) { // 生成100个随机数尝试填充
+                let num = Math.random() * (max - min) + min;
+                if (this.isNumberOfType(num, type) && num >= min && num <= max) {
+                    uniqueNumbers.add(num);
+                }
+            }
+        }
+
+        return Array.from(uniqueNumbers);
     }
 
     // 加入房间
@@ -163,6 +225,7 @@ class RoomManager {
 
     // 生成游戏数据（目标数字和卡池）
     generateGameData(settings) {
+        // generateNumber 函数现在只负责根据范围和类型生成一个数字，不处理自定义列表
         const generateNumber = (min, max, type) => {
             let num = Math.random() * (max - min) + min;
             switch (type) {
@@ -175,18 +238,11 @@ class RoomManager {
             }
         };
 
-        const target = generateNumber(
-            settings.targetRange.min,
-            settings.targetRange.max,
-            settings.numberType
-        );
+        // 从预计算的数组中随机选择目标数字和卡池数字
+        const target = settings.availableTargetNumbers[Math.floor(Math.random() * settings.availableTargetNumbers.length)];
 
         const pool = Array.from({ length: settings.poolSize }, () => ({
-            value: generateNumber(
-                settings.poolRange.min,
-                settings.poolRange.max,
-                settings.numberType
-            )
+            value: settings.availablePoolNumbers[Math.floor(Math.random() * settings.availablePoolNumbers.length)]
         }));
 
         return { target, pool };

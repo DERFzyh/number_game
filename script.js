@@ -9,11 +9,15 @@ const state = {
     playerName: localStorage.getItem('playerName') || '匿名玩家',
     movesCount: 0, // 操作次数
     settings: {
-        operators: ['+', '-'],
-        targetRange: { min: 10, max: 100 },
-        poolRange: { min: 1, max: 50 },
-        numberType: 'integer', // integer, decimal1, decimal2, mul10, mul100
-        poolSize: 5
+        targetRange: { min: 1, max: 100 },
+        poolRange: { min: 1, max: 20 },
+        poolSize: 5,
+        targetNumberType: 'integer', // 新增：目标数字类型
+        poolNumberType: 'integer', // 新增：卡池数字类型
+        operators: ['+', '-', '*', '/'],
+        customTargetNumbers: '', // 新增：自定义目标数字，逗号分隔
+        customPoolNumbers: '',   // 新增：自定义卡池数字，逗号分隔
+        testMode: false           // 新增：测试模式开关
     },
     savedPresets: JSON.parse(localStorage.getItem('gameSettingsPresets')) || {}, // 新增：保存的个性化设置预设
     activePreset: localStorage.getItem('activeSettingsPreset') || null, // 新增：当前激活的预设名称
@@ -27,7 +31,11 @@ const state = {
         currentRound: 0,
         totalRounds: 1
     },
-    roomPollInterval: null
+    roomPollInterval: null,
+    // 全局游戏状态
+    availableTargetNumbers: [], // 新增：预计算的目标数字数组
+    availablePoolNumbers: [],   // 新增：预计算的卡池数字数组
+    deviationScores: [] // 存储每轮的偏差分数
 };
 
 // DOM Elements
@@ -122,7 +130,11 @@ function renderSettings() {
     document.getElementById('setting-min-pool').value = state.settings.poolRange.min;
     document.getElementById('setting-max-pool').value = state.settings.poolRange.max;
     document.getElementById('setting-pool-size').value = state.settings.poolSize;
-    document.getElementById('setting-type').value = state.settings.numberType;
+    document.getElementById('setting-target-type').value = state.settings.targetNumberType; // 修改为目标数字类型
+    document.getElementById('setting-pool-type').value = state.settings.poolNumberType;     // 新增：卡池数字类型
+    document.getElementById('setting-custom-target-numbers').value = state.settings.customTargetNumbers;
+    document.getElementById('setting-custom-pool-numbers').value = state.settings.customPoolNumbers;
+    document.getElementById('setting-test-mode').checked = state.settings.testMode; // 设置测试模式状态
 
     document.querySelectorAll('input[name="operator"]').forEach(cb => {
         cb.checked = state.settings.operators.includes(cb.value);
@@ -141,7 +153,11 @@ function saveSettings() {
     state.settings.poolRange.min = Number(document.getElementById('setting-min-pool').value);
     state.settings.poolRange.max = Number(document.getElementById('setting-max-pool').value);
     state.settings.poolSize = Number(document.getElementById('setting-pool-size').value);
-    state.settings.numberType = document.getElementById('setting-type').value;
+    state.settings.targetNumberType = document.getElementById('setting-target-type').value; // 修改为目标数字类型
+    state.settings.poolNumberType = document.getElementById('setting-pool-type').value;     // 新增：卡池数字类型
+    state.settings.customTargetNumbers = document.getElementById('setting-custom-target-numbers').value;
+    state.settings.customPoolNumbers = document.getElementById('setting-custom-pool-numbers').value;
+    state.settings.testMode = document.getElementById('setting-test-mode').checked; // 获取测试模式状态
 
     const ops = [];
     document.querySelectorAll('input[name="operator"]:checked').forEach(cb => {
@@ -150,11 +166,32 @@ function saveSettings() {
     if (ops.length === 0) ops.push('+');
     state.settings.operators = ops;
 
-    // 保存玩家名称
-    const playerNameInput = document.getElementById('setting-player-name');
-    if (playerNameInput) {
-        state.playerName = playerNameInput.value.trim() || '匿名玩家';
-        localStorage.setItem('playerName', state.playerName);
+    // 在保存设置后立即预计算可用数字列表
+    const targetCustomNums = parseCustomNumbers(state.settings.customTargetNumbers);
+    const poolCustomNums = parseCustomNumbers(state.settings.customPoolNumbers);
+    state.availableTargetNumbers = precalculateAvailableNumbers(state.settings.targetRange.min, state.settings.targetRange.max, state.settings.targetNumberType, targetCustomNums);
+    state.availablePoolNumbers = precalculateAvailableNumbers(state.settings.poolRange.min, state.settings.poolRange.max, state.settings.poolNumberType, poolCustomNums);
+
+    console.log('Available Target Numbers:', state.availableTargetNumbers);
+    console.log('Available Pool Numbers:', state.availablePoolNumbers);
+
+    saveAllSettings(); // 将 saveSettingsToLocalStorage() 替换为 saveAllSettings()
+    render(); // 刷新 UI 以反映设置更改（如果需要）
+    displayPrecalculatedNumbers(); // 显示预计算数字（如果测试模式开启）
+}
+
+// 辅助函数：显示预计算的数字数组
+function displayPrecalculatedNumbers() {
+    const debugInfoDiv = document.getElementById('debug-info');
+    if (state.settings.testMode) {
+        debugInfoDiv.innerHTML = `
+            <h3>测试模式 (预计算数字)</h3>
+            <p>目标数字: ${state.availableTargetNumbers.join(', ')}</p>
+            <p>卡池数字: ${state.availablePoolNumbers.join(', ')}</p>
+        `;
+        debugInfoDiv.style.display = 'block';
+    } else {
+        debugInfoDiv.style.display = 'none';
     }
 }
 
@@ -272,7 +309,11 @@ function applySettings(settings) {
     document.getElementById('setting-min-pool').value = settings.poolRange.min;
     document.getElementById('setting-max-pool').value = settings.poolRange.max;
     document.getElementById('setting-pool-size').value = settings.poolSize;
-    document.getElementById('setting-type').value = settings.numberType;
+    document.getElementById('setting-target-type').value = settings.targetNumberType; // 修改为目标数字类型
+    document.getElementById('setting-pool-type').value = settings.poolNumberType;     // 新增：卡池数字类型
+    document.getElementById('setting-custom-target-numbers').value = settings.customTargetNumbers;
+    document.getElementById('setting-custom-pool-numbers').value = settings.customPoolNumbers;
+    document.getElementById('setting-test-mode').checked = settings.testMode; // 设置测试模式状态
 
     document.querySelectorAll('input[name="operator"]').forEach(cb => {
         cb.checked = settings.operators.includes(cb.value);
@@ -285,7 +326,62 @@ function applySettings(settings) {
     }
 }
 
+// 辅助函数：解析自定义数字字符串
+function parseCustomNumbers(numberString) {
+    if (!numberString) {
+        return [];
+    }
+    return numberString.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+}
+
+// 辅助函数：检查数字是否符合类型
+function isNumberOfType(num, type) {
+    switch (type) {
+        case 'integer': return Number.isInteger(num);
+        case 'decimal1': return (num * 10) % 1 === 0;
+        case 'decimal2': return (num * 100) % 1 === 0;
+        case 'mul10': return num % 10 === 0;
+        case 'mul100': return num % 100 === 0;
+        default: return Number.isInteger(num);
+    }
+}
+
+// 辅助函数：预计算可用数字列表
+function precalculateAvailableNumbers(min, max, type, customNumbers) {
+    const uniqueNumbers = new Set();
+
+    // 1. 添加自定义数字（去重）
+    customNumbers.forEach(num => {
+        // 检查数字范围和类型
+        if (num >= min && num <= max && isNumberOfType(num, type)) {
+            uniqueNumbers.add(num);
+        }
+    });
+
+    // 2. 添加符合范围和类型的所有数字（去重，不与自定义数字重复）
+    // 为了效率，这里只考虑整数类型下的范围遍历。对于小数和整十数/整百数，
+    // 实际游戏中的生成是随机的，如果需要“所有”符合条件的数字，需要更复杂的遍历或生成策略。
+    // 目前，我们简化为只在整数类型下进行范围遍历，其他类型仍然依赖于随机生成和条件检查。
+    if (type === 'integer') {
+        for (let i = min; i <= max; i++) {
+            if (Number.isInteger(i)) {
+                uniqueNumbers.add(i);
+            }
+        }
+    } else { // 对于非整数类型，我们将生成一小部分随机数来增加池的多样性
+        for (let i = 0; i < 100; i++) { // 生成100个随机数尝试填充
+            let num = Math.random() * (max - min) + min;
+            if (isNumberOfType(num, type) && num >= min && num <= max) {
+                uniqueNumbers.add(num);
+            }
+        }
+    }
+
+    return Array.from(uniqueNumbers);
+}
+
 // Game Logic
+// generateNumber 函数现在只负责根据范围和类型生成一个数字，不处理自定义列表
 function generateNumber(min, max, type) {
     let num = Math.random() * (max - min) + min;
     switch (type) {
@@ -300,11 +396,13 @@ function generateNumber(min, max, type) {
 
 function initGame() {
     const s = state.settings;
-    state.target = generateNumber(s.targetRange.min, s.targetRange.max, s.numberType);
+
+    // 从预计算的数组中随机选择目标数字和卡池数字
+    state.target = state.availableTargetNumbers[Math.floor(Math.random() * state.availableTargetNumbers.length)];
 
     state.pool = Array.from({ length: s.poolSize }, (_, i) => ({
         id: `init-${Date.now()}-${i}`,
-        value: generateNumber(s.poolRange.min, s.poolRange.max, s.numberType),
+        value: state.availablePoolNumbers[Math.floor(Math.random() * state.availablePoolNumbers.length)],
         history: null
     }));
 
@@ -315,6 +413,7 @@ function initGame() {
     render();
     updateCurrentScoreDisplay(); // 新增：初始化当前分数显示
     els.resultOverlay.classList.remove('visible');
+    displayPrecalculatedNumbers(); // 游戏开始时也更新显示
 }
 
 function render() {
@@ -405,8 +504,8 @@ async function performOperation(op) {
     }
 
     // Fix precision
-    if (state.settings.numberType.startsWith('decimal') || op === '/') {
-        const precision = state.settings.numberType === 'decimal1' ? 1 : 2;
+    if (state.settings.targetNumberType.startsWith('decimal') || op === '/') {
+        const precision = state.settings.targetNumberType === 'decimal1' ? 1 : 2;
         newVal = Number(newVal.toFixed(precision));
     } else {
         newVal = Math.round(newVal); // Ensure integer if mode is integer
@@ -586,7 +685,7 @@ async function showResult() {
                 finalScore: parseFloat(score),
                 poolSize: state.pool.length,
                 operators: state.settings.operators,
-                numberType: state.settings.numberType,
+                numberType: state.settings.targetNumberType,
                 movesCount: state.movesCount
             });
         } catch (error) {
@@ -633,7 +732,7 @@ function openCreateRoom() {
     document.getElementById('cr-min-pool').value = state.settings.poolRange.min;
     document.getElementById('cr-max-pool').value = state.settings.poolRange.max;
     document.getElementById('cr-pool-size').value = state.settings.poolSize;
-    document.getElementById('cr-type').value = state.settings.numberType;
+    document.getElementById('cr-type').value = state.settings.targetNumberType;
 
     document.querySelectorAll('input[name="cr-operator"]').forEach(cb => {
         cb.checked = state.settings.operators.includes(cb.value);
