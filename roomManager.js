@@ -292,7 +292,7 @@ class RoomManager {
             : generateNumber(settings.targetRange.min, settings.targetRange.max, settings.targetNumberType); // 如果预计算数组为空，回退到随机生成
 
         const pool = Array.from({ length: settings.poolSize }, () => ({
-            value: settings.availablePoolNumbers.length > 0
+            value: (settings.availablePoolNumbers && settings.availablePoolNumbers.length > 0)
                 ? settings.availablePoolNumbers[Math.floor(Math.random() * settings.availablePoolNumbers.length)]
                 : generateNumber(settings.poolRange.min, settings.poolRange.max, settings.poolNumberType) // 如果预计算数组为空，回退到随机生成
         }));
