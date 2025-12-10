@@ -30,11 +30,24 @@ class RoomManager {
             hostId: hostId,
             players: new Map(), // playerId -> { id, name, score, isReady, currentRound }
             settings: {
-                ...settings,
-                targetNumberType: settings.targetNumberType || 'integer', // 新增：目标数字类型
-                poolNumberType: settings.poolNumberType || 'integer',     // 新增：卡池数字类型
-                questionCount: settings.questionCount || 1,
-                testMode: settings.testMode || false // 新增：测试模式开关
+                targetRange: { min: 1, max: 100 }, // 默认目标数字范围
+                poolRange: { min: 1, max: 20 },   // 默认卡池数字范围
+                operators: ['+', '-', '*', '/'], // 默认运算符
+                targetNumberType: 'integer',     // 默认目标数字类型
+                poolNumberType: 'integer',       // 默认卡池数字类型
+                poolSize: 6,                     // 默认卡池大小
+                timeLimit: 60,                   // 默认时间限制
+                questionCount: 1,                // 默认题目数量
+                allowNegative: false,            // 默认不允许负数
+                allowDecimal: false,             // 默认不允许小数
+                allowDuplication: true,          // 默认允许卡池数字重复
+                customTargetNumbers: '',         // 默认自定义目标数字
+                customPoolNumbers: '',           // 默认自定义卡池数字
+                testMode: false,                 // 默认测试模式
+                ...settings, // 合并传入的设置，覆盖默认值
+                // 确保子对象合并正确
+                targetRange: { ...({ min: 1, max: 100 }), ...(settings.targetRange || {}) },
+                poolRange: { ...({ min: 1, max: 20 }), ...(settings.poolRange || {}) },
             },
             status: 'waiting', // waiting, playing, finished
             currentRound: 0,
