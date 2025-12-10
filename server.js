@@ -154,9 +154,9 @@ app.post('/api/rooms/:roomId/leave', (req, res) => {
 app.post('/api/rooms/:roomId/start', (req, res) => {
     try {
         const { roomId } = req.params;
-        const { hostId } = req.body;
+        const { hostId, settings = {} } = req.body; // 新增：接收 settings, 提供默认空对象
 
-        const room = roomManager.startGame(roomId, hostId);
+        const room = roomManager.startGame(roomId, hostId, settings); // 传递 settings
 
         res.json({
             success: true,

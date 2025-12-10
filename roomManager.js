@@ -200,8 +200,8 @@ class RoomManager {
         return room;
     }
 
-    // 开始游戏（生成题目）
-    startGame(roomId, hostId) {
+    // 开始游戏
+    startGame(roomId, hostId, newSettings) { // 新增：接收 newSettings 参数
         const room = this.rooms.get(roomId);
         if (!room) {
             throw new Error('房间不存在');
@@ -212,14 +212,38 @@ class RoomManager {
         }
 
         if (room.status !== 'waiting') {
-            throw new Error('游戏已开始');
+            throw new Error('游戏已经开始或已结束');
         }
 
-        if (room.players.size < 2) {
-            throw new Error('至少需要2名玩家');
+        // 应用新的设置 (如果提供)
+        if (newSettings) {
+            // 更安全地合并设置，确保子对象不会变成 undefined
+            room.settings = {
+                ...room.settings,
+                ...newSettings,
+                targetRange: {
+                    ...room.settings.targetRange,
+                    ...(newSettings.targetRange || {})
+                },
+                poolRange: {
+                    ...room.settings.poolRange,
+                    ...(newSettings.poolRange || {})
+                },
+                operators: newSettings.operators ? [...newSettings.operators] : room.settings.operators,
+                targetNumberType: newSettings.targetNumberType || room.settings.targetNumberType,
+                poolNumberType: newSettings.poolNumberType || room.settings.poolNumberType,
+                customTargetNumbers: newSettings.customTargetNumbers !== undefined ? newSettings.customTargetNumbers : room.settings.customTargetNumbers,
+                customPoolNumbers: newSettings.customPoolNumbers !== undefined ? newSettings.customPoolNumbers : room.settings.customPoolNumbers,
+                testMode: newSettings.testMode !== undefined ? newSettings.testMode : room.settings.testMode
+            };
+
+            // 重新预计算可用数字列表
+            const targetCustomNums = this.parseCustomNumbers(room.settings.customTargetNumbers);
+            const poolCustomNums = this.parseCustomNumbers(room.settings.customPoolNumbers);
+            room.availableTargetNumbers = this.precalculateAvailableNumbers(room.settings.targetRange.min, room.settings.targetRange.max, room.settings.targetNumberType, targetCustomNums);
+            room.availablePoolNumbers = this.precalculateAvailableNumbers(room.settings.poolRange.min, room.settings.poolRange.max, room.settings.poolNumberType, poolCustomNums);
         }
 
-        // 生成第一题
         room.currentRound = 1;
         room.status = 'playing';
         room.gameData = this.generateGameData(room.settings);
@@ -250,7 +274,7 @@ class RoomManager {
         };
 
         // 从预计算的数组中随机选择目标数字和卡池数字
-        const target = settings.availableTargetNumbers.length > 0
+        const target = (settings.availableTargetNumbers && settings.availableTargetNumbers.length > 0)
             ? settings.availableTargetNumbers[Math.floor(Math.random() * settings.availableTargetNumbers.length)]
             : generateNumber(settings.targetRange.min, settings.targetRange.max, settings.targetNumberType); // 如果预计算数组为空，回退到随机生成
 
