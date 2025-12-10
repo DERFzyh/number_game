@@ -144,59 +144,9 @@
                     style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
 
-            <details style="margin-top: 15px; border: 1px solid #eee; border-radius: 4px; padding: 10px;">
-                <summary style="cursor: pointer; font-weight: bold; color: #666;">高级设置</summary>
-
-                <div class="settings-section" style="margin-top: 10px;">
-                    <h3>运算符</h3>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="cr-operator" value="+" checked> +</label>
-                        <label><input type="checkbox" name="cr-operator" value="-" checked> -</label>
-                        <label><input type="checkbox" name="cr-operator" value="*"> ×</label>
-                        <label><input type="checkbox" name="cr-operator" value="/"> ÷</label>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>目标数字范围</h3>
-                    <div class="setting-row">
-                        <label>最小:</label>
-                        <input type="number" id="cr-min-target" value="10" style="width: 60px;">
-                    </div>
-                    <div class="setting-row">
-                        <label>最大:</label>
-                        <input type="number" id="cr-max-target" value="100" style="width: 60px;">
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>初始数字范围</h3>
-                    <div class="setting-row">
-                        <label>最小:</label>
-                        <input type="number" id="cr-min-pool" value="1" style="width: 60px;">
-                    </div>
-                    <div class="setting-row">
-                        <label>最大:</label>
-                        <input type="number" id="cr-max-pool" value="50" style="width: 60px;">
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>数字类型</h3>
-                    <select id="cr-type" style="width: 100%; padding: 5px;">
-                        <option value="integer">整数</option>
-                        <option value="decimal1">1位小数</option>
-                        <option value="decimal2">2位小数</option>
-                        <option value="mul10">整十数</option>
-                        <option value="mul100">整百数</option>
-                    </select>
-                </div>
-
-                <div class="settings-section">
-                    <h3>初始数量</h3>
-                    <input type="number" id="cr-pool-size" value="5" min="2" max="10" style="width: 100%;">
-                </div>
-            </details>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-op" style="width: auto; background: #e67e22;" onclick="openSettingsFromCreateRoom()">编辑高级设置</button>
+            </div>
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-submit" onclick="createRoom()">创建</button>
                 <button class="btn btn-close" onclick="closeCreateRoom()">取消</button>

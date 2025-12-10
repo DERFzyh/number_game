@@ -74,6 +74,8 @@ function showView(viewName) {
 }
 
 function goHome() {
+    // 确保关闭结果叠加层
+    els.resultOverlay.classList.remove('visible');
     // 离开房间
     if (state.room.roomId) {
         if (state.roomPollInterval) {
@@ -106,7 +108,15 @@ function startGame() {
     showView('game');
 }
 
-function openSettings() {
+let returnToCreateRoom = false; // 全局变量，用于追踪是否从创建房间打开设置
+
+function openSettingsFromCreateRoom() {
+    closeCreateRoom(); // 关闭创建房间界面
+    openSettings(true); // 打开设置界面，并标记为从创建房间打开
+}
+
+function openSettings(fromCreateRoom = false) {
+    returnToCreateRoom = fromCreateRoom;
     renderSettings();
     populateSettingsPresets(); // 新增：填充预设下拉菜单
     // 更新玩家名称输入框
@@ -121,6 +131,11 @@ function closeSettings() {
     saveSettings(); // 保存当前设置到 state.settings
     saveAllSettings(); // 新增：保存所有设置和预设到 localStorage
     els.settingsOverlay.classList.remove('visible');
+
+    if (returnToCreateRoom) {
+        openCreateRoom(); // 返回创建房间界面
+        returnToCreateRoom = false; // 重置标志
+    }
 }
 
 // Settings Logic
@@ -743,18 +758,6 @@ function openCreateRoom() {
     closeRoomMenu();
     const playerNameInput = document.getElementById('create-room-player-name');
     playerNameInput.value = state.playerName;
-
-    // Populate create room settings with current global settings
-    document.getElementById('cr-min-target').value = state.settings.targetRange.min;
-    document.getElementById('cr-max-target').value = state.settings.targetRange.max;
-    document.getElementById('cr-min-pool').value = state.settings.poolRange.min;
-    document.getElementById('cr-max-pool').value = state.settings.poolRange.max;
-    document.getElementById('cr-pool-size').value = state.settings.poolSize;
-    document.getElementById('cr-type').value = state.settings.targetNumberType;
-
-    document.querySelectorAll('input[name="cr-operator"]').forEach(cb => {
-        cb.checked = state.settings.operators.includes(cb.value);
-    });
 
     document.getElementById('create-room-overlay').classList.add('visible');
 }
