@@ -204,6 +204,12 @@ function loadAllSettings() {
     state.savedPresets = JSON.parse(localStorage.getItem('gameSettingsPresets')) || {};
     state.activePreset = localStorage.getItem('activeSettingsPreset') || null;
 
+    // 在加载设置后立即预计算可用数字列表
+    const targetCustomNums = parseCustomNumbers(state.settings.customTargetNumbers);
+    const poolCustomNums = parseCustomNumbers(state.settings.customPoolNumbers);
+    state.availableTargetNumbers = precalculateAvailableNumbers(state.settings.targetRange.min, state.settings.targetRange.max, state.settings.targetNumberType, targetCustomNums);
+    state.availablePoolNumbers = precalculateAvailableNumbers(state.settings.poolRange.min, state.settings.poolRange.max, state.settings.poolNumberType, poolCustomNums);
+
     // 应用当前激活的预设（如果存在）
     if (state.activePreset && state.savedPresets[state.activePreset]) {
         applySettings(state.savedPresets[state.activePreset]);
@@ -957,7 +963,10 @@ async function startRoomGame() {
         const response = await fetch(`${API_BASE_URL}/api/rooms/${state.room.roomId}/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ hostId: state.room.playerId })
+            body: JSON.stringify({ 
+                hostId: state.room.playerId,
+                settings: state.settings // 新增：发送当前设置给服务器
+            })
         });
 
         const data = await response.json();
